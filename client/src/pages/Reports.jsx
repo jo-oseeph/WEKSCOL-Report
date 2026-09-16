@@ -19,7 +19,7 @@ function Reports() {
   return (
     <div className="reports-shell">
       <header className="reports-topbar"><div className="reports-topbar-inner">
-        <div className="reports-topbar-branding"><div className="reports-topbar-logo">WK</div><div className="reports-topbar-brand-copy"><strong>WEKSCOL Report</strong><small>West Kenya Sugar Co.</small></div></div>
+        <div className="reports-topbar-branding"><div className="reports-topbar-brand-copy"><strong>WEKSCOL Report</strong><small>West Kenya Sugar Co.</small></div></div>
         <div className="reports-navigation"><Link className="reports-home-link" to="/">Home</Link><CategoryTabs categories={reportCategories} selectedCategory={selectedCategory} selectedSubcategory={selectedSubcategory} selectedReport={selectedReport} onSelectReport={handleSelectReport} /></div>
         <div className="reports-topbar-user"><div className="reports-topbar-avatar">A</div><div className="reports-topbar-user-copy"><strong>Admin User</strong><small>Head Office</small></div></div>
       </div></header>
