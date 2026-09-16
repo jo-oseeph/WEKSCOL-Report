@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { reportCategories } from "../data/reportsData";
 import "../styles/Hero.css";
 
 const heroSlides = [
@@ -56,6 +57,21 @@ function Hero() {
     return () => clearInterval(timer);
   }, []);
 
+  const totalReports = reportCategories.reduce(
+    (total, category) =>
+      total +
+      category.subcategories.reduce(
+        (categoryTotal, subcategory) => categoryTotal + subcategory.reports.length,
+        0
+      ),
+    0
+  );
+  const totalCategories = reportCategories.length;
+  const totalSubcategories = reportCategories.reduce(
+    (total, category) => total + category.subcategories.length,
+    0
+  );
+
   const switchMode = (next) => {
     if (next === mode) return;
     setMode(next);
@@ -95,7 +111,29 @@ function Hero() {
         </div>
         <div className="auth-visual-overlay" />
 
-        <div className="auth-mark">West Kenya Sugar</div>
+        <div className="auth-copy">
+          <span className="auth-eyebrow">West Kenya Sugar Co.</span>
+          <h1 className="auth-heading">Reports Portal</h1>
+          <p className="auth-desc">
+            Track sugarcane operations and access every departmental report
+            from one secure dashboard.
+          </p>
+
+          <div className="auth-stats">
+            <div className="auth-stat">
+              <strong>{totalReports}</strong>
+              <span>Reports</span>
+            </div>
+            <div className="auth-stat">
+              <strong>{totalCategories}</strong>
+              <span>Categories</span>
+            </div>
+            <div className="auth-stat">
+              <strong>{totalSubcategories}</strong>
+              <span>Subcategories</span>
+            </div>
+          </div>
+        </div>
 
         <div className="auth-slide-dots">
           {heroSlides.map((slide, index) => (
