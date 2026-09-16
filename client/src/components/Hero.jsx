@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { reportCategories } from "../data/reportsData";
+import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/Hero.css";
 
 const heroSlides = [
@@ -48,6 +49,10 @@ function Hero() {
   const [mode, setMode] = useState("login"); // "login" | "register"
   const [login, setLogin] = useState(initialLogin);
   const [register, setRegister] = useState(initialRegister);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login: authenticate, register: createAccount } = useAuth();
   const formRef = useRef(null);
 
   useEffect(() => {
@@ -75,6 +80,8 @@ function Hero() {
   const switchMode = (next) => {
     if (next === mode) return;
     setMode(next);
+    setError("");
+    setSuccess("");
   };
 
   const handleLoginChange = (e) =>
@@ -83,16 +90,36 @@ function Hero() {
   const handleRegisterChange = (e) =>
     setRegister((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    // TODO: wire up to auth API
-    console.log("login", login);
+    setError("");
+    setSuccess("");
+    setIsSubmitting(true);
+    try {
+      await authenticate({ email: login.username, password: login.password });
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleRegisterSubmit = (e) => {
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    // TODO: wire up to auth API
-    console.log("register", register);
+    setError("");
+    setSuccess("");
+    setIsSubmitting(true);
+    try {
+      await createAccount(register);
+      setLogin({ username: register.email, password: "" });
+      setRegister(initialRegister);
+      setMode("login");
+      setSuccess("Account created. Sign in to access the reports.");
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -147,7 +174,7 @@ function Hero() {
         </div>
       </section>
 
-      <section className="auth-panel">
+      <section className="auth-panel" id="auth-panel">
         <div className="auth-panel-inner">
           <div className="auth-header">
             <h1 className="auth-title">
@@ -192,8 +219,10 @@ function Hero() {
                   </a>
                 </div>
 
-                <button className="auth-submit" type="submit">
-                  Sign in
+                {error ? <p className="auth-error">{error}</p> : null}
+                {success ? <p className="auth-success">{success}</p> : null}
+                <button className="auth-submit" type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Signing in..." : "Sign in"}
                 </button>
               </form>
             ) : (
@@ -265,8 +294,9 @@ function Hero() {
                   />
                 </div>
 
-                <button className="auth-submit" type="submit">
-                  Create account
+                {error ? <p className="auth-error">{error}</p> : null}
+                <button className="auth-submit" type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Creating account..." : "Create account"}
                 </button>
               </form>
             )}
