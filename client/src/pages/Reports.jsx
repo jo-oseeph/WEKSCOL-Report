@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { reportCategories } from "../data/reportsData";
 import CategoryTabs from "../components/CategoryTabs.jsx";
 import ReportViewer from "../components/ReportViewer.jsx";
+import ReportsOverview from "../components/ReportsOverview.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/Reports.css";
 
@@ -11,10 +12,17 @@ function Reports() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const querySectionRef = useRef(null);
   const userInitials = `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
   const selectedCategory = reportCategories.find((category) => category.id === categoryId) || null;
   const selectedSubcategory = selectedCategory?.subcategories.find((subcategory) => subcategory.id === subcategoryId) || null;
   const selectedReport = selectedSubcategory?.reports.find((report) => report.id === reportId) || null;
+
+  useEffect(() => {
+    if (!selectedReport || !querySectionRef.current) return;
+
+    querySectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [selectedReport]);
 
   function handleSelectReport(category, subcategory, report) {
     navigate(`/reports/${category.id}/${subcategory.id}/${report.id}`);
@@ -35,8 +43,13 @@ function Reports() {
         </div>
       </div></header>
       <main className="reports-page">
-        <div className="reports-heading"><span className="reports-eyebrow">Report centre</span><h1>Query reports</h1></div>
-        <section className="reports-content-panel">{selectedReport ? <ReportViewer report={selectedReport} key={selectedReport.id} /> : <div className="reports-empty-state"><h3>Choose a report to get started</h3><p>Open a category, select a subcategory, and choose a report from the menu above.</p></div>}</section>
+      
+        <ReportsOverview hasSelectedReport={Boolean(selectedReport)} />
+        {selectedReport ? (
+          <section className="reports-content-panel reports-query-panel" ref={querySectionRef}>
+            <ReportViewer report={selectedReport} key={selectedReport.id} />
+          </section>
+        ) : null}
       </main>
     </div>
   );

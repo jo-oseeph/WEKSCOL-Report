@@ -237,19 +237,21 @@
   background-size: cover;
   background-position: center;
   opacity: 0;
-  transition: opacity 1.4s ease;
+  transform: scale(1.04);
+  transition: opacity 1.2s linear, transform 6s linear;
 }
 
 .auth-slide-active {
   opacity: 1;
+  transform: scale(1);
 }
 
 .auth-visual-overlay {
   background: linear-gradient(
     100deg,
-    rgba(6, 20, 13, 0.72) 0%,
-    rgba(6, 20, 13, 0.34) 42%,
-    rgba(6, 20, 13, 0.5) 100%
+    rgba(6, 20, 13, 0.78) 0%,
+    rgba(6, 20, 13, 0.46) 42%,
+    rgba(6, 20, 13, 0.58) 100%
   );
 }
 
@@ -259,7 +261,7 @@
   position: absolute;
   z-index: 2;
   left: clamp(64px, 8vw, 120px);
-  right: calc(44% + 56px);
+  right: calc(44% + 40px);
   top: 50%;
   transform: translateY(-50%);
   max-width: 560px;
@@ -267,6 +269,7 @@
   flex-direction: column;
   gap: 16px;
   color: #fff;
+  animation: hero-copy-in 0.7s linear both;
 }
 
 .auth-eyebrow {
@@ -276,34 +279,55 @@
 }
 
 .auth-heading {
-  transform: translateX(100px);
-  font-size: clamp(1.9rem, 3.4vw, 3rem);
+  font-size: clamp(2.3rem, 4.4vw, 4.4rem);
   font-weight: 800;
-  letter-spacing: -1px;
+  letter-spacing: -1.8px;
   line-height: 1.08;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.42);
+  text-shadow: 0 3px 14px rgba(0, 0, 0, 0.48);
+  animation: hero-copy-item-in 0.65s linear 0.08s both;
 }
 
 .auth-desc {
-  transform: translateX(100px);
   font-size: 1rem;
   line-height: 1.65;
   color: rgba(255, 255, 255, 0.86);
   max-width: 440px;
+  animation: hero-copy-item-in 0.65s linear 0.18s both;
 }
 
 .auth-stats {
-  transform: translateX(100px);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-top: 4px;
   max-width: 460px;
+  animation: hero-copy-item-in 0.65s linear 0.28s both;
+}
+
+@keyframes hero-copy-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes hero-copy-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .auth-stat {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 4px;
   padding: 14px 16px;
   background: rgba(255, 255, 255, 0.12);
@@ -323,6 +347,7 @@
   font-size: 0.72rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.78);
+  text-align: center;
 }
 
 .auth-slide-dots {
