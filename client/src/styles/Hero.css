@@ -192,6 +192,7 @@
 }
 
 /* auth */
+/* auth */
 .auth-page {
   --ink: var(--color-primary-dark);
   --paper: #ffffff;
@@ -206,7 +207,7 @@
       rgba(8, 31, 20, 0.18),
       rgba(8, 31, 20, 0.72)
     ),
-    url("https://images.pexels.com/photos/36976807/pexels-photo-36976807.jpeg?auto=compress&cs=tinysrgb&w=1920");
+    url("/images/auth-slide-1.jpg");
   background-size: cover;
   background-position: center;
   height: calc(100vh - 72px);
@@ -246,21 +247,79 @@
 
 .auth-visual-overlay {
   background: linear-gradient(
-    180deg,
-    rgba(12, 58, 31, 0.12) 0%,
-    rgba(12, 58, 31, 0.62) 100%
+    100deg,
+    rgba(6, 20, 13, 0.72) 0%,
+    rgba(6, 20, 13, 0.34) 42%,
+    rgba(6, 20, 13, 0.5) 100%
   );
 }
 
-.auth-mark {
+/* ---------- left copy: title, description, stats ---------- */
+
+.auth-copy {
   position: absolute;
-  top: 32px;
-  left: 40px;
   z-index: 2;
+  left: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(46%, 560px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   color: #fff;
-  font-size: 0.95rem;
+}
+
+.auth-eyebrow {
+  font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: 0.2px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.auth-heading {
+  font-size: clamp(1.9rem, 3.4vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.08;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.auth-desc {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.86);
+  max-width: 440px;
+}
+
+.auth-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+  max-width: 460px;
+}
+
+.auth-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.auth-stat strong {
+  font-size: clamp(1.3rem, 2vw, 1.7rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.auth-stat span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .auth-slide-dots {
@@ -302,23 +361,41 @@
 }
 
 .auth-panel-inner {
+  position: relative;
   width: min(100%, 380px);
   padding: 32px 30px 26px;
-  background: rgba(232, 246, 234, 0.92);
-  border: 1px solid rgba(20, 83, 45, 0.12);
-  border-top: 4px solid #79c98b;
-  border-radius: 12px;
-  box-shadow: 0 24px 48px rgba(4, 24, 14, 0.16);
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(74, 222, 128, 0.2) 0%, rgba(74, 222, 128, 0) 55%),
+    linear-gradient(165deg, #123d2b 0%, #0b3022 38%, #08251b 78%, #061a14 100%);
+  border: 1px solid rgba(120, 235, 195, 0.3);
+  border-radius: 16px;
+  box-shadow:
+    0 30px 60px rgba(3, 12, 20, 0.45),
+    0 0 0 1px rgba(120, 235, 195, 0.08),
+    inset 0 1px rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.auth-panel-inner::before {
+  content: "";
+  position: absolute;
+  top: -60%;
+  right: -40%;
+  width: 70%;
+  height: 140%;
+  background: radial-gradient(closest-side, rgba(90, 240, 190, 0.16), transparent 70%);
+  pointer-events: none;
 }
 
 .auth-header {
+  position: relative;
   margin-bottom: 22px;
 }
 
 .auth-title {
-  color: #123f2b;
+  color: #f2fbf6;
   font-size: clamp(1.6rem, 2vw, 2rem);
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: -0.4px;
 }
 
@@ -326,13 +403,14 @@
   content: "";
   display: block;
   width: 42px;
-  height: 4px;
+  height: 3px;
   margin-top: 12px;
   border-radius: 999px;
-  background: #79c98b;
+  background: linear-gradient(90deg, #5af0be, #79c9ff);
 }
 
 .auth-form-wrap {
+  position: relative;
   animation: authFade 0.35s ease;
 }
 
@@ -371,23 +449,25 @@
 
 .auth-field input {
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 7px;
-  background: #f7fbf8;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
   padding: 13px 14px;
   font-size: 0.9rem;
-  color: #102a20;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  color: #f2fbf6;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .auth-field input::placeholder {
-  color: #587064;
+  color: rgba(242, 251, 246, 0.5);
 }
 
 .auth-field input:focus {
   outline: none;
-  border-color: #79c98b;
-  box-shadow: 0 0 0 3px rgba(121, 201, 139, 0.24);
+  border-color: #5af0be;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(90, 240, 190, 0.18);
 }
 
 .auth-row {
@@ -398,14 +478,14 @@
 }
 
 .auth-link-quiet {
-  color: #1b5a39;
+  color: rgba(242, 251, 246, 0.72);
   font-size: 0.82rem;
   font-weight: 600;
   text-decoration: none;
 }
 
 .auth-link-quiet:hover {
-  color: #0d3b24;
+  color: #5af0be;
 }
 
 .auth-submit {
@@ -413,25 +493,27 @@
   margin-top: 6px;
   padding: 13px 18px;
   border: none;
-  border-radius: 7px;
-  background: #fff;
-  color: #12602d;
+  border-radius: 8px;
+  background: linear-gradient(120deg, #5af0be, #43c7e8);
+  color: #04231a;
   font-size: 0.9rem;
   font-weight: 800;
   letter-spacing: 0.1px;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 12px 26px rgba(90, 240, 190, 0.22);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
 .auth-submit:hover {
-  background: #dff4e4;
-  color: #0d4c24;
+  filter: brightness(1.05);
   transform: translateY(-1px);
+  box-shadow: 0 16px 32px rgba(90, 240, 190, 0.3);
 }
 
 .auth-toggle {
+  position: relative;
   margin-top: 20px;
-  color: rgba(17, 41, 28, 0.72);
+  color: rgba(242, 251, 246, 0.65);
   font-size: 0.85rem;
   text-align: center;
 }
@@ -439,7 +521,7 @@
 .auth-toggle button {
   border: none;
   background: none;
-  color: #14532d;
+  color: #5af0be;
   font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;
@@ -456,15 +538,14 @@
     min-height: 100vh;
   }
 
+  .auth-copy {
+    display: none;
+  }
+
   .auth-panel {
     width: 100%;
     min-width: 0;
     min-height: 100vh;
-  }
-
-  .auth-mark {
-    top: 20px;
-    left: 24px;
   }
 
   .auth-slide-dots {
