@@ -139,7 +139,7 @@ function Hero() {
         <div className="auth-visual-overlay" />
 
         <div className="auth-copy">
-          <span className="auth-eyebrow">West Kenya Sugar Co.</span>
+          {/* <span className="auth-eyebrow">West Kenya Sugar Co.</span> */}
           <h1 className="auth-heading">Reports Portal</h1>
           <p className="auth-desc">
             Track sugarcane operations and access every departmental report

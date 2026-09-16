@@ -16,8 +16,11 @@ function Home() {
     <div className="site-shell">
       <header className="site-topbar">
         <Link className="site-brand" to="/">
-          <span className="site-logo">WK</span>
-          <span className="site-brand-copy"><strong>WEKSCOL Report</strong><small>West Kenya Sugar Co.</small></span>
+          {/* <span className="site-logo">WK</span> */}
+          <span className="site-brand-copy">
+            <strong>WEKSCOL Report</strong>
+            <small>West Kenya Sugar Co.</small>
+          </span>
         </Link>
         <nav className="site-nav" aria-label="Main navigation">
           <Link className="site-nav-link active" to="/">Home</Link>
@@ -28,7 +31,6 @@ function Home() {
           ) : (
             <a className="site-nav-link" href={reportsTarget}>Reports</a>
           )}
-        
         </nav>
         {user ? (
           <div className="site-user-profile">
