@@ -513,6 +513,26 @@
   box-shadow: 0 16px 32px rgba(90, 240, 190, 0.3);
 }
 
+.auth-submit:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.auth-error,
+.auth-success {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.auth-error {
+  color: #ffaaa8;
+}
+
+.auth-success {
+  color: #5af0be;
+}
+
 .auth-toggle {
   position: relative;
   margin-top: 20px;
