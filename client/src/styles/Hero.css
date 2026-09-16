@@ -192,7 +192,6 @@
 }
 
 /* auth */
-/* auth */
 .auth-page {
   --ink: var(--color-primary-dark);
   --paper: #ffffff;
@@ -259,10 +258,11 @@
 .auth-copy {
   position: absolute;
   z-index: 2;
-  left: 40px;
+  left: clamp(64px, 8vw, 120px);
+  right: calc(44% + 56px);
   top: 50%;
   transform: translateY(-50%);
-  width: min(46%, 560px);
+  max-width: 560px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -276,6 +276,7 @@
 }
 
 .auth-heading {
+  transform: translateX(100px);
   font-size: clamp(1.9rem, 3.4vw, 3rem);
   font-weight: 800;
   letter-spacing: -1px;
@@ -284,7 +285,7 @@
 }
 
 .auth-desc {
-  transform: translateX(18px);
+  transform: translateX(100px);
   font-size: 1rem;
   line-height: 1.65;
   color: rgba(255, 255, 255, 0.86);
@@ -292,7 +293,7 @@
 }
 
 .auth-stats {
-  transform: translateX(18px);
+  transform: translateX(100px);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
