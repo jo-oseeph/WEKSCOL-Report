@@ -280,10 +280,11 @@
   font-weight: 800;
   letter-spacing: -1px;
   line-height: 1.08;
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.42);
 }
 
 .auth-desc {
+  transform: translateX(18px);
   font-size: 1rem;
   line-height: 1.65;
   color: rgba(255, 255, 255, 0.86);
@@ -291,6 +292,7 @@
 }
 
 .auth-stats {
+  transform: translateX(18px);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
