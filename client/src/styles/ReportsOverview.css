@@ -37,6 +37,8 @@
 }
 
 .reports-stat-grid {
+  width: min(100%, 1180px);
+  margin-inline: auto;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
@@ -45,7 +47,7 @@
 .reports-stat-card {
   position: relative;
   width: 100%;
-  max-width: 280px;
+  max-width: 258px;
   justify-self: center;
   min-height: 128px;
   display: flex;
@@ -89,7 +91,7 @@
 }
 
 .reports-stat-detail {
-  color: var(--color-text-soft);
+  color: var(--color-primary);
   font-size: 11px;
   max-width: 190px;
 }

@@ -24,6 +24,15 @@
   color: var(--color-primary-dark);
 }
 
+.site-brand-logo {
+  width: 80px;
+  height: 80px;
+  flex: none;
+  transform: translateY(-2px);
+  object-fit: contain;
+  border-radius: 8px;
+}
+
 .auth-brand {
   display: inline-flex;
   align-items: center;
@@ -447,5 +456,16 @@
   .site-user-form-row.two-column,
   .reports-user-form-row.two-column {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .site-brand-logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .site-brand-copy small {
+    display: none;
   }
 }

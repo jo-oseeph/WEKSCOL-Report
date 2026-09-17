@@ -74,26 +74,12 @@ function ReportsOverview({ hasSelectedReport }) {
       <div className="reports-stat-grid">
         {overviewStats.map(({ label, value, detail, tone }) => (
           <article className={`reports-stat-card reports-stat-card-${tone}`} key={label}>
-            {/* <span className="reports-stat-icon" aria-hidden="true">
-              <Icon size={16} strokeWidth={2.25} />
-            </span> */}
+
             <span className="reports-stat-label">{label}</span>
             <strong className="reports-stat-value">{value}</strong>
             <span className="reports-stat-detail">{detail}</span>
           </article>
         ))}
-      </div>
-
-      <div className="reports-overview-prompt" role="status">
-        <div>
-          <strong>{hasSelectedReport ? "Your report workspace is ready" : "Explore detailed reports"}</strong>
-          <p>
-            {hasSelectedReport
-              ? "Use the query panel below to narrow results by plant, region, zone and date."
-              : "Choose a report from the navigation above to filter records by plant, region, zone and date."}
-          </p>
-        </div>
-        <span className="reports-prompt-arrow" aria-hidden="true">↓</span>
       </div>
     </section>
   );
