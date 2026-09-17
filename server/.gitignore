@@ -3,11 +3,4 @@
 *.sqlite-shm
 *.sqlite-journal
 *.db
-server/data/*.sqlite
-server/data/*.sqlite-wal
-server/data/*.sqlite-shm
-server/data/*.sqlite-journal
-server/data/*.db
-server/data/*.db-wal
-server/data/*.db-shm
-server/data/*.sqlite.corrupt-*
+server/data/
