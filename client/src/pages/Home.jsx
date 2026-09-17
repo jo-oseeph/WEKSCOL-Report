@@ -5,41 +5,51 @@ import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/Site.css";
 
 function Home() {
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading, logout, changePassword } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isProfileDetailsOpen, setIsProfileDetailsOpen] = useState(false);
+  const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [formMessage, setFormMessage] = useState("");
   const reportsTarget = user ? "/reports" : "#auth-panel";
   const userInitials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
     : "";
 
+  async function handlePasswordSubmit(event) {
+    event.preventDefault();
+    setFormMessage("");
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setFormMessage("New passwords do not match.");
+      return;
+    }
+    try {
+      await changePassword(passwordForm);
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setFormMessage("Password changed successfully.");
+    } catch (error) {
+      setFormMessage(error.message || "Unable to change password.");
+    }
+  }
+
   return (
     <div className="site-shell">
       <header className="site-topbar">
         <Link className="site-brand" to="/">
-          <img
-            className="site-brand-logo"
-            src="/images/logo1.png"
-            alt="West Kenya Sugar Co. logo"
-          />
+          {/* <span className="site-logo">WK</span> */}
           <span className="site-brand-copy">
             <strong>WEKSCOL Report</strong>
             <small>West Kenya Sugar Co.</small>
           </span>
         </Link>
         <nav className="site-nav" aria-label="Main navigation">
-          <Link className="site-nav-link active" to="/">
-            Home
-          </Link>
+          <Link className="site-nav-link active" to="/">Home</Link>
           {isLoading ? (
             <span className="site-nav-link">Reports</span>
           ) : user ? (
-            <Link className="site-nav-link" to={reportsTarget}>
-              Reports
-            </Link>
+            <Link className="site-nav-link" to={reportsTarget}>Reports</Link>
           ) : (
-            <a className="site-nav-link" href={reportsTarget}>
-              Reports
-            </a>
+            <a className="site-nav-link" href={reportsTarget}>Reports</a>
           )}
         </nav>
         {user ? (
@@ -53,20 +63,58 @@ function Home() {
             >
               <div className="site-user-avatar">{userInitials}</div>
               <div className="site-user-copy">
-                <strong>
-                  {user.firstName} {user.lastName}
-                </strong>
+                <strong>{user.firstName} {user.lastName}</strong>
                 <small>{user.email}</small>
               </div>
-              <span className="site-user-chevron" aria-hidden="true">
-                &#9662;
-              </span>
+              <span className="site-user-chevron" aria-hidden="true">&#9662;</span>
             </button>
             {isProfileOpen ? (
               <div className="site-user-menu">
-                <button type="button" onClick={logout}>
-                  Log out
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsProfileDetailsOpen(true);
+                    setIsProfileOpen(false);
+                  }}
+                >
+                  My Profile
                 </button>
+                <button type="button" onClick={logout}>Log out</button>
+              </div>
+            ) : null}
+            {isProfileDetailsOpen ? (
+              <div className="site-user-details">
+                <div className="site-user-details-header">
+                  <div className="site-user-details-avatar">{userInitials}</div>
+                  <div>
+                    <strong>{user.firstName} {user.lastName}</strong>
+                    <small>{user.email}</small>
+                  </div>
+                </div>
+
+                <div className="site-user-profile-form">
+                  <div className="site-user-form-row two-column">
+                    <div><span>First Name</span><strong>{user.firstName}</strong></div>
+                    <div><span>Last Name</span><strong>{user.lastName}</strong></div>
+                  </div>
+                  <div className="site-user-form-row two-column">
+                    <div><span>Email</span><strong>{user.email}</strong></div>
+                    <div><span>ID Number</span><strong>{user.idNumber}</strong></div>
+                  </div>
+                  <button type="button" className="site-user-submit" onClick={() => { setIsPasswordFormOpen((isOpen) => !isOpen); setFormMessage(""); }}>
+                    {isPasswordFormOpen ? "Cancel password change" : "Change password"}
+                  </button>
+                  {isPasswordFormOpen ? (
+                    <form className="site-user-profile-form" onSubmit={handlePasswordSubmit}>
+                      <label><span>Current password</span><input type="password" value={passwordForm.currentPassword} onChange={(event) => setPasswordForm((current) => ({ ...current, currentPassword: event.target.value }))} required /></label>
+                      <label><span>New password</span><input type="password" value={passwordForm.newPassword} onChange={(event) => setPasswordForm((current) => ({ ...current, newPassword: event.target.value }))} minLength="6" required /></label>
+                      <label><span>Confirm new password</span><input type="password" value={passwordForm.confirmPassword} onChange={(event) => setPasswordForm((current) => ({ ...current, confirmPassword: event.target.value }))} minLength="6" required /></label>
+                      <button type="submit" className="site-user-submit">Save password</button>
+                    </form>
+                  ) : null}
+                  {formMessage ? <p className="site-user-form-message">{formMessage}</p> : null}
+                  <button type="button" className="site-user-details-close" onClick={() => setIsProfileDetailsOpen(false)}>Close</button>
+                </div>
               </div>
             ) : null}
           </div>
