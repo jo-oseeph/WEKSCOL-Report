@@ -34,13 +34,29 @@ export function AuthProvider({ children }) {
     return request("/auth/register", { method: "POST", body: JSON.stringify(details) });
   }
 
+  async function updateProfile(details) {
+    const result = await request("/auth/profile", {
+      method: "PUT",
+      body: JSON.stringify(details),
+    });
+    setUser(result.user);
+    return result.user;
+  }
+
+  async function changePassword(details) {
+    return request("/auth/password", {
+      method: "PUT",
+      body: JSON.stringify(details),
+    });
+  }
+
   async function logout() {
     await request("/auth/logout", { method: "POST" });
     setUser(null);
     navigate("/");
   }
 
-  return <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, isLoading, login, register, updateProfile, changePassword, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

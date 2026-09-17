@@ -12,8 +12,12 @@ fs.mkdirSync(dataDirectory, { recursive: true });
 const db = new Database(path.join(dataDirectory, "wescol.sqlite"));
 db.pragma("journal_mode = WAL");
 db.exec(
-  "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT NOT NULL, last_name TEXT NOT NULL, email TEXT NOT NULL UNIQUE COLLATE NOCASE, id_number TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL); CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL);",
+  "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT NOT NULL, last_name TEXT NOT NULL, email TEXT NOT NULL UNIQUE COLLATE NOCASE, id_number TEXT NOT NULL UNIQUE, avatar_url TEXT, password_hash TEXT NOT NULL); CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL);",
 );
+const userColumns = db.prepare("PRAGMA table_info(users)").all();
+if (!userColumns.some((column) => column.name === "avatar_url")) {
+  db.exec("ALTER TABLE users ADD COLUMN avatar_url TEXT;");
+}
 const sessionForeignKeys = db
   .prepare("PRAGMA foreign_key_list(sessions)")
   .all();
@@ -42,6 +46,7 @@ const userView = (user) => ({
   lastName: user.last_name,
   email: user.email,
   idNumber: user.id_number,
+  avatarUrl: user.avatar_url || null,
 });
 function currentUser(request) {
   const token = tokenFrom(request);
@@ -77,7 +82,7 @@ app.get("/api/auth/me", (request, response) => {
   response.json({ user: user ? userView(user) : null });
 });
 app.post("/api/auth/register", async (request, response) => {
-  const { firstName, lastName, email, idNumber, password } = request.body;
+  const { firstName, lastName, email, idNumber, password, avatarUrl } = request.body;
   if (
     !firstName ||
     !lastName ||
@@ -95,13 +100,14 @@ app.post("/api/auth/register", async (request, response) => {
   try {
     const result = db
       .prepare(
-        "INSERT INTO users (first_name, last_name, email, id_number, password_hash) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO users (first_name, last_name, email, id_number, avatar_url, password_hash) VALUES (?, ?, ?, ?, ?, ?)",
       )
       .run(
         firstName.trim(),
         lastName.trim(),
         email.trim().toLowerCase(),
         idNumber.trim(),
+        avatarUrl?.trim() || null,
         await bcrypt.hash(password, 12),
       );
     const user = db
@@ -118,6 +124,78 @@ app.post("/api/auth/register", async (request, response) => {
             : "Unable to create the account.",
       });
   }
+});
+app.put("/api/auth/profile", async (request, response) => {
+  const currentUserRecord = currentUser(request);
+  if (!currentUserRecord) {
+    return response.status(401).json({ error: "You must be logged in." });
+  }
+
+  const { firstName, lastName, email, idNumber, avatarUrl, password } = request.body;
+  if (!firstName || !lastName || !email || !idNumber) {
+    return response.status(400).json({ error: "Name, email, and ID number are required." });
+  }
+
+  try {
+    const updates = [
+      "first_name = ?",
+      "last_name = ?",
+      "email = ?",
+      "id_number = ?",
+      "avatar_url = ?",
+    ];
+    const values = [
+      firstName.trim(),
+      lastName.trim(),
+      email.trim().toLowerCase(),
+      idNumber.trim(),
+      avatarUrl?.trim() || null,
+      currentUserRecord.id,
+    ];
+
+    if (password && password.length >= 6) {
+      updates.push("password_hash = ?");
+      values.splice(values.length - 1, 0, await bcrypt.hash(password, 12));
+    }
+
+    const query = `UPDATE users SET ${updates.join(", ")} WHERE id = ?`;
+    db.prepare(query).run(...values);
+
+    const updatedUser = db.prepare("SELECT * FROM users WHERE id = ?").get(currentUserRecord.id);
+    response.json({ user: userView(updatedUser) });
+  } catch (error) {
+    response
+      .status(error.code === "SQLITE_CONSTRAINT_UNIQUE" ? 409 : 500)
+      .json({
+        error:
+          error.code === "SQLITE_CONSTRAINT_UNIQUE"
+            ? "That email or ID number is already in use."
+            : "Unable to update the profile.",
+      });
+  }
+});
+app.put("/api/auth/password", async (request, response) => {
+  const currentUserRecord = currentUser(request);
+  if (!currentUserRecord) {
+    return response.status(401).json({ error: "You must be logged in." });
+  }
+
+  const { currentPassword, newPassword, confirmPassword } = request.body;
+  if (!currentPassword || !newPassword || newPassword.length < 6) {
+    return response.status(400).json({ error: "Use a new password with at least 6 characters." });
+  }
+  if (newPassword !== confirmPassword) {
+    return response.status(400).json({ error: "New passwords do not match." });
+  }
+  if (!(await bcrypt.compare(currentPassword, currentUserRecord.password_hash))) {
+    return response.status(400).json({ error: "The current password is incorrect." });
+  }
+
+  db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(
+    await bcrypt.hash(newPassword, 12),
+    currentUserRecord.id,
+  );
+  response.json({ ok: true });
 });
 app.post("/api/auth/login", async (request, response) => {
   const user = db
