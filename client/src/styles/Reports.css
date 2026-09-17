@@ -26,6 +26,16 @@
   justify-self: start;
 }
 
+.reports-topbar-logo-image {
+  width: 80px;
+  height: 80px;
+  flex: none;
+  transform: translateY(-2px);
+  object-fit: contain;
+  border-radius: 8px;
+
+}
+
 .reports-navigation {
   display: flex;
   align-items: center;
@@ -238,6 +248,11 @@
   .reports-topbar-branding {
     width: auto;
     min-height: 52px;
+  }
+
+  .reports-topbar-logo-image {
+    width: 38px;
+    height: 38px;
   }
 
   .reports-navigation {
