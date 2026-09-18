@@ -1,11 +1,8 @@
-// Dummy hierarchical location data used by the standard report location filter.
 export const LOCATION_LEVELS = [
   "Plant",
   "Region",
   "Zone",
   "Section",
-  "Sublocation",
-  "Village",
 ];
 
 const nodeById = new Map();
@@ -62,9 +59,9 @@ function makePlant(plantName, regionNames) {
 }
 
 export const plants = [
-  makePlant("Kabras", ["Kabras East", "Kabras West", "Malava"]),
-  makePlant("Naitiri", ["Naitiri North", "Naitiri South", "Kimilili"]),
-  makePlant("Olepito", ["Olepito Central", "Olepito North", "Turbo"]),
+  makePlant("Naitiri", ["Kitale", "Misikhu", "Naitiri"]),
+  makePlant("Olepito", ["Busia"]),
+  makePlant("Kabras", []),
 ];
 
 // Returns the option list (id + name) for a given level index (0 = Plant),

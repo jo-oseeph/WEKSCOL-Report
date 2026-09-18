@@ -9,6 +9,8 @@ import createAuthController from "./controllers/authController.js";
 import createAuthRoutes from "./routes/authRoutes.js";
 import createAuthService from "./services/authService.js";
 import createSessionService from "./services/sessionService.js";
+import createReportRoutes from "./routes/reportRoutes.js";
+import requireAuth from "./middleware/authMiddleware.js";
 import errorHandler from "./middleware/errorHandler.js";
 import notFound from "./middleware/notFound.js";
 
@@ -34,6 +36,11 @@ const app = express();
 app.use(express.json({ limit: "32kb" }));
 app.use(morgan("dev"));
 app.use("/api/auth", createAuthRoutes(authController));
+app.use(
+  "/api/reports",
+  requireAuth({ sessionService, cookieName: config.session.cookieName }),
+  createReportRoutes(),
+);
 app.use(notFound);
 app.use(errorHandler);
 
