@@ -4,6 +4,8 @@ import LocationFilter, {
 } from "./LocationFilter.jsx";
 import "../styles/ReportViewer.css";
 
+const RESULTS_PER_PAGE = 50;
+
 function ReportViewer({ report }) {
   const [showResults, setShowResults] = useState(false);
   const [locationSelection, setLocationSelection] = useState(
@@ -13,6 +15,7 @@ function ReportViewer({ report }) {
   const [dateTo, setDateTo] = useState("");
   const [locations, setLocations] = useState([]);
   const [result, setResult] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -48,6 +51,7 @@ function ReportViewer({ report }) {
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Unable to generate report.");
       setResult(body);
+      setCurrentPage(1);
       setShowResults(true);
     } catch (requestError) {
       setError(requestError.message);
@@ -59,6 +63,15 @@ function ReportViewer({ report }) {
 
   function download(format) {
     window.location.assign(`/api/reports/${report.id}/export.${format}${queryString ? `?${queryString}` : ""}`);
+  }
+
+  const totalPages = result ? Math.max(1, Math.ceil(result.rows.length / RESULTS_PER_PAGE)) : 1;
+  const visibleRows = result
+    ? result.rows.slice((currentPage - 1) * RESULTS_PER_PAGE, currentPage * RESULTS_PER_PAGE)
+    : [];
+
+  function goToPage(page) {
+    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
   }
 
   return (
@@ -134,25 +147,41 @@ function ReportViewer({ report }) {
               No records found for the selected filters or date range.
             </div>
           ) : (
-            <div className="report-table-wrap">
-              <table className="report-table">
-                <thead>
-                  <tr>
-                    {result.columns.map((col) => (
-                      <th key={col}>{col}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.rows.map((row, rowIndex) => (
-                    <tr key={rowIndex}>
-                      {result.columns.map((column) => (
-                        <td key={column}>{row[column]}</td>
+            <div className="report-table-section">
+              <div className="report-table-wrap">
+                <table className="report-table">
+                  <thead>
+                    <tr>
+                      {result.columns.map((col) => (
+                        <th key={col}>{col}</th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {visibleRows.map((row, rowIndex) => (
+                      <tr key={(currentPage - 1) * RESULTS_PER_PAGE + rowIndex}>
+                        {result.columns.map((column) => (
+                          <td key={column}>{row[column]}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {totalPages > 1 ? (
+                <nav className="report-pagination" aria-label="Report pages">
+                  <button type="button" className="report-pagination-btn" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
+                    Previous
+                  </button>
+                  <span className="report-pagination-status" aria-live="polite">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button type="button" className="report-pagination-btn" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}>
+                    Next
+                  </button>
+                </nav>
+              ) : null}
             </div>
           )}
         </div>
