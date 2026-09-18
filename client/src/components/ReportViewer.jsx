@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import LocationFilter, {
   createDefaultLocationSelection,
 } from "./LocationFilter.jsx";
@@ -11,15 +11,54 @@ function ReportViewer({ report }) {
   );
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [extraValues, setExtraValues] = useState({});
+  const [locations, setLocations] = useState([]);
+  const [result, setResult] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleExtraChange(name, value) {
-    setExtraValues((prev) => ({ ...prev, [name]: value }));
+  useEffect(() => {
+    fetch("/api/reports/filters", { credentials: "include" })
+      .then((response) => response.json().then((body) => ({ response, body })))
+      .then(({ response, body }) => {
+        if (!response.ok) throw new Error(body.error || "Unable to load filters.");
+        setLocations(body.locations || []);
+      })
+      .catch((requestError) => setError(requestError.message));
+  }, []);
+
+  const query = useMemo(() => {
+    const [plant, region, zone, section] = locationSelection;
+    return { plant, region, zone, section, dateFrom, dateTo };
+  }, [locationSelection, dateFrom, dateTo]);
+
+  const queryString = useMemo(() => {
+    const params = new URLSearchParams();
+    Object.entries(query).forEach(([key, value]) => {
+      if (value && value !== "all") params.set(key, value);
+    });
+    return params.toString();
+  }, [query]);
+
+  async function handleGenerate(event) {
+    event.preventDefault();
+    setIsLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/reports/${report.id}?${queryString}`, { credentials: "include" });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Unable to generate report.");
+      setResult(body);
+      setShowResults(true);
+    } catch (requestError) {
+      setError(requestError.message);
+      setShowResults(false);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
-  function handleGenerate(event) {
-    event.preventDefault();
-    setShowResults(true);
+  function download(format) {
+    window.location.assign(`/api/reports/${report.id}/export.${format}${queryString ? `?${queryString}` : ""}`);
   }
 
   return (
@@ -35,6 +74,7 @@ function ReportViewer({ report }) {
           <LocationFilter
             selection={locationSelection}
             onChange={setLocationSelection}
+            locations={locations}
           />
         </div>
 
@@ -60,22 +100,6 @@ function ReportViewer({ report }) {
               />
             </div>
 
-            {report.parameters.map((param) => (
-              <div className="report-filter-field" key={param.name}>
-                <label htmlFor={param.name}>{param.label}</label>
-                <select
-                  id={param.name}
-                  value={extraValues[param.name] || ""}
-                  onChange={(e) => handleExtraChange(param.name, e.target.value)}
-                >
-                  {param.options.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
           </div>
         </div>
 
@@ -86,46 +110,51 @@ function ReportViewer({ report }) {
         </div>
       </form>
 
-      {showResults && (
+      {error ? <p className="report-error">{error}</p> : null}
+      {isLoading ? <p className="report-loading">Loading report…</p> : null}
+
+      {showResults && result && (
         <div className="report-results">
           <div className="report-results-toolbar">
             <span className="report-results-count">
-              {report.results.rows.length} record
-              {report.results.rows.length === 1 ? "" : "s"} found
+              {result.rows.length} record{result.rows.length === 1 ? "" : "s"} found
             </span>
             <div className="report-results-actions">
-              <button type="button" className="report-action-btn">
-                Export PDF
-              </button>
-              <button type="button" className="report-action-btn">
-                Export Excel
-              </button>
-              <button type="button" className="report-action-btn">
+              <button type="button" className="report-action-btn" onClick={() => download("pdf")}>Export PDF</button>
+              <button type="button" className="report-action-btn" onClick={() => download("xlsx")}>Export Excel</button>
+              <button type="button" className="report-action-btn" onClick={() => download("csv")}>Export CSV</button>
+              <button type="button" className="report-action-btn" onClick={() => window.print()}>
                 Print
               </button>
             </div>
           </div>
 
-          <div className="report-table-wrap">
-            <table className="report-table">
-              <thead>
-                <tr>
-                  {report.results.columns.map((col) => (
-                    <th key={col}>{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {report.results.rows.map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {row.map((cell, cellIndex) => (
-                      <td key={cellIndex}>{cell}</td>
+          {result.rows.length === 0 ? (
+            <div className="report-empty-state">
+              No records found for the selected filters or date range.
+            </div>
+          ) : (
+            <div className="report-table-wrap">
+              <table className="report-table">
+                <thead>
+                  <tr>
+                    {result.columns.map((col) => (
+                      <th key={col}>{col}</th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {result.rows.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {result.columns.map((column) => (
+                        <td key={column}>{row[column]}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>

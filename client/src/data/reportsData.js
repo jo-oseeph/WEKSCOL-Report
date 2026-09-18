@@ -1,4 +1,4 @@
-// Dummy static data for the WEKSCOL Report prototype.
+﻿// Dummy static data for the WEKSCOL Report prototype.
 // Structure: Category -> Subcategory -> Report
 
 const extraFilters = {
@@ -40,6 +40,16 @@ export const reportCategories = [
     name: "Agriculture",
     description: "Field operations, land preparation and cane development reports.",
     subcategories: [
+      {
+        id: "leads-collection",
+        name: "Leads Collection",
+        reports: [
+          { id: "open-requests", name: "Open Requests Log", description: "Customer care requests that are still open or in progress.", parameters: [], results: { columns: [], rows: [] } },
+          { id: "resolved-requests", name: "Resolved Requests Log", description: "Customer care requests resolved through field action.", parameters: [], results: { columns: [], rows: [] } },
+          { id: "regional-summary", name: "Regional Summary", description: "Request volume, resolution and pending rates by region.", parameters: [], results: { columns: [], rows: [] } },
+          { id: "farmer-request-history", name: "Farmer Request History", description: "Request history grouped by farmer.", parameters: [], results: { columns: [], rows: [] } },
+        ],
+      },
       {
         id: "farmer-recruitment",
         name: "Farmer Recruitment",
@@ -968,3 +978,4 @@ export function getTotalReportCount() {
 export function getTotalSubcategoryCount() {
   return reportCategories.reduce((total, category) => total + category.subcategories.length, 0);
 }
+

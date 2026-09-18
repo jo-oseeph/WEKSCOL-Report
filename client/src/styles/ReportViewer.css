@@ -120,6 +120,34 @@
   font-weight: 500;
 }
 
+.report-loading,
+.report-error {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+
+.report-empty-state {
+  padding: 24px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  text-align: center;
+  font-size: 13px;
+}
+
+.report-loading {
+  color: var(--color-primary-dark);
+  background: rgba(20, 83, 45, 0.08);
+}
+
+.report-error {
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
 .report-results-actions {
   display: flex;
   gap: 8px;
