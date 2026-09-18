@@ -22,14 +22,24 @@ function Reports() {
   const [formMessage, setFormMessage] = useState("");
 
   const querySectionRef = useRef(null);
-  const userInitials = `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
-  const selectedCategory = reportCategories.find((category) => category.id === categoryId) || null;
-  const selectedSubcategory = selectedCategory?.subcategories.find((subcategory) => subcategory.id === subcategoryId) || null;
-  const selectedReport = selectedSubcategory?.reports.find((report) => report.id === reportId) || null;
+  const userInitials =
+    `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
+  const selectedCategory =
+    reportCategories.find((category) => category.id === categoryId) || null;
+  const selectedSubcategory =
+    selectedCategory?.subcategories.find(
+      (subcategory) => subcategory.id === subcategoryId,
+    ) || null;
+  const selectedReport =
+    selectedSubcategory?.reports.find((report) => report.id === reportId) ||
+    null;
 
   useEffect(() => {
     if (!selectedReport || !querySectionRef.current) return;
-    querySectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    querySectionRef.current.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }, [selectedReport]);
 
   function handleSelectReport(category, subcategory, report) {
@@ -47,7 +57,11 @@ function Reports() {
 
     try {
       await changePassword(passwordForm);
-      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
       setFormMessage("Password changed successfully.");
     } catch (error) {
       setFormMessage(error.message || "Unable to change password.");
@@ -59,6 +73,11 @@ function Reports() {
       <header className="reports-topbar">
         <div className="reports-topbar-inner">
           <div className="reports-topbar-branding">
+            <img
+              src="/images/logo1.png"
+              alt="WEKSCOL"
+              className="site-logo"
+            />
             <div className="reports-topbar-brand-copy">
               <strong>WEKSCOL Report</strong>
               <small>West Kenya Sugar Co.</small>
@@ -66,7 +85,9 @@ function Reports() {
           </div>
 
           <div className="reports-navigation">
-            <Link className="reports-home-link" to="/">Home</Link>
+            <Link className="reports-home-link" to="/">
+              Home
+            </Link>
             <CategoryTabs
               categories={reportCategories}
               selectedCategory={selectedCategory}
@@ -85,10 +106,14 @@ function Reports() {
             >
               <div className="reports-topbar-avatar">{userInitials}</div>
               <div className="reports-topbar-user-copy">
-                <strong>{user?.firstName} {user?.lastName}</strong>
+                <strong>
+                  {user?.firstName} {user?.lastName}
+                </strong>
                 <small>{user?.email}</small>
               </div>
-              <span className="reports-user-chevron" aria-hidden="true">&#9662;</span>
+              <span className="reports-user-chevron" aria-hidden="true">
+                &#9662;
+              </span>
             </button>
 
             {isProfileOpen ? (
@@ -102,28 +127,46 @@ function Reports() {
                 >
                   My Profile
                 </button>
-                <button type="button" onClick={logout}>Log out</button>
+                <button type="button" onClick={logout}>
+                  Log out
+                </button>
               </div>
             ) : null}
 
             {isProfileDetailsOpen ? (
               <div className="reports-user-details">
                 <div className="reports-user-details-header">
-                  <div className="reports-user-details-avatar">{userInitials}</div>
+                  <div className="reports-user-details-avatar">
+                    {userInitials}
+                  </div>
                   <div>
-                    <strong>{user?.firstName} {user?.lastName}</strong>
+                    <strong>
+                      {user?.firstName} {user?.lastName}
+                    </strong>
                     <small>{user?.email}</small>
                   </div>
                 </div>
 
                 <div className="reports-user-profile-form">
                   <div className="site-user-form-row two-column">
-                    <div><span>First Name</span><strong>{user?.firstName}</strong></div>
-                    <div><span>Last Name</span><strong>{user?.lastName}</strong></div>
+                    <div>
+                      <span>First Name</span>
+                      <strong>{user?.firstName}</strong>
+                    </div>
+                    <div>
+                      <span>Last Name</span>
+                      <strong>{user?.lastName}</strong>
+                    </div>
                   </div>
                   <div className="site-user-form-row two-column">
-                    <div><span>Email</span><strong>{user?.email}</strong></div>
-                    <div><span>ID Number</span><strong>{user?.idNumber}</strong></div>
+                    <div>
+                      <span>Email</span>
+                      <strong>{user?.email}</strong>
+                    </div>
+                    <div>
+                      <span>ID Number</span>
+                      <strong>{user?.idNumber}</strong>
+                    </div>
                   </div>
 
                   <button
@@ -134,11 +177,16 @@ function Reports() {
                       setFormMessage("");
                     }}
                   >
-                    {isPasswordFormOpen ? "Cancel password change" : "Change password"}
+                    {isPasswordFormOpen
+                      ? "Cancel password change"
+                      : "Change password"}
                   </button>
 
                   {isPasswordFormOpen ? (
-                    <form className="reports-user-profile-form" onSubmit={handlePasswordSubmit}>
+                    <form
+                      className="reports-user-profile-form"
+                      onSubmit={handlePasswordSubmit}
+                    >
                       <label>
                         <span>Current password</span>
                         <input
@@ -183,12 +231,20 @@ function Reports() {
                           required
                         />
                       </label>
-                      <button type="submit" className="site-user-submit">Save password</button>
+                      <button type="submit" className="site-user-submit">
+                        Save password
+                      </button>
                     </form>
                   ) : null}
 
-                  {formMessage ? <p className="site-user-form-message">{formMessage}</p> : null}
-                  <button type="button" className="reports-user-details-close" onClick={() => setIsProfileDetailsOpen(false)}>
+                  {formMessage ? (
+                    <p className="site-user-form-message">{formMessage}</p>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="reports-user-details-close"
+                    onClick={() => setIsProfileDetailsOpen(false)}
+                  >
                     Close
                   </button>
                 </div>
@@ -201,7 +257,10 @@ function Reports() {
       <main className="reports-page">
         <ReportsOverview hasSelectedReport={Boolean(selectedReport)} />
         {selectedReport ? (
-          <section className="reports-content-panel reports-query-panel" ref={querySectionRef}>
+          <section
+            className="reports-content-panel reports-query-panel"
+            ref={querySectionRef}
+          >
             <ReportViewer report={selectedReport} key={selectedReport.id} />
           </section>
         ) : null}
