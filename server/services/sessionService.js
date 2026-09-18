@@ -29,6 +29,7 @@ const createSessionService = ({ sessionRepository, userRepository, sessionConfig
             lastName: user.last_name,
             email: user.email,
             idNumber: user.id_number,
+            avatarUrl: user.avatar_url || null,
           }
         : null;
     },

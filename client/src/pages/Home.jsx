@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Hero from "../components/Hero.jsx";
+import { AvatarPicker, UserAvatar } from "../components/UserAvatar.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/Site.css";
 
 function Home() {
-  const { user, isLoading, logout, changePassword } = useAuth();
+  const { user, isLoading, logout, updateProfile, changePassword } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isProfileDetailsOpen, setIsProfileDetailsOpen] = useState(false);
   const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
@@ -14,11 +15,52 @@ function Home() {
     newPassword: "",
     confirmPassword: "",
   });
+  const [profileForm, setProfileForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    idNumber: "",
+    avatarUrl: "",
+  });
   const [formMessage, setFormMessage] = useState("");
   const reportsTarget = user ? "/reports" : "#auth-panel";
   const userInitials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
     : "";
+
+  function openProfileDetails() {
+    setProfileForm({
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      email: user.email || "",
+      idNumber: user.idNumber || "",
+      avatarUrl: user.avatarUrl || "",
+    });
+    setIsProfileDetailsOpen(true);
+    setIsProfileOpen(false);
+  }
+
+  function handleAvatarChange(avatarUrl) {
+    setProfileForm((current) => ({ ...current, avatarUrl }));
+  }
+
+  async function handleProfileSubmit(event) {
+    event.preventDefault();
+    setFormMessage("");
+    try {
+      const updatedUser = await updateProfile(profileForm);
+      setProfileForm({
+        firstName: updatedUser.firstName || "",
+        lastName: updatedUser.lastName || "",
+        email: updatedUser.email || "",
+        idNumber: updatedUser.idNumber || "",
+        avatarUrl: updatedUser.avatarUrl || "",
+      });
+      setFormMessage("Profile updated successfully.");
+    } catch (error) {
+      setFormMessage(error.message || "Unable to update your profile.");
+    }
+  }
 
   async function handlePasswordSubmit(event) {
     event.preventDefault();
@@ -75,7 +117,11 @@ function Home() {
               aria-label={`Open profile menu for ${user.firstName} ${user.lastName}`}
               onClick={() => setIsProfileOpen((isOpen) => !isOpen)}
             >
-              <div className="site-user-avatar">{userInitials}</div>
+              <UserAvatar
+                user={user}
+                initials={userInitials}
+                className="site-user-avatar"
+              />
               <div className="site-user-copy">
                 <strong>
                   {user.firstName} {user.lastName}
@@ -90,10 +136,7 @@ function Home() {
               <div className="site-user-menu">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsProfileDetailsOpen(true);
-                    setIsProfileOpen(false);
-                  }}
+                  onClick={openProfileDetails}
                 >
                   My Profile
                 </button>
@@ -105,7 +148,15 @@ function Home() {
             {isProfileDetailsOpen ? (
               <div className="site-user-details">
                 <div className="site-user-details-header">
-                  <div className="site-user-details-avatar">{userInitials}</div>
+                  <AvatarPicker
+                    user={{
+                      ...user,
+                      avatarUrl: profileForm.avatarUrl || user.avatarUrl,
+                    }}
+                    initials={userInitials}
+                    onChange={handleAvatarChange}
+                    className="site-user-details-avatar"
+                  />
                   <div>
                     <strong>
                       {user.firstName} {user.lastName}
@@ -114,7 +165,10 @@ function Home() {
                   </div>
                 </div>
 
-                <div className="site-user-profile-form">
+                <form
+                  className="site-user-profile-form"
+                  onSubmit={handleProfileSubmit}
+                >
                   <div className="site-user-form-row two-column">
                     <div>
                       <span>First Name</span>
@@ -135,6 +189,11 @@ function Home() {
                       <strong>{user.idNumber}</strong>
                     </div>
                   </div>
+                  <button type="submit" className="site-user-submit">
+                    Update profile
+                  </button>
+                </form>
+                <div className="site-user-profile-form">
                   <button
                     type="button"
                     className="site-user-submit"

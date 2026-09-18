@@ -4,13 +4,14 @@ import { reportCategories } from "../data/reportsData";
 import CategoryTabs from "../components/CategoryTabs.jsx";
 import ReportViewer from "../components/ReportViewer.jsx";
 import ReportsOverview from "../components/ReportsOverview.jsx";
+import { AvatarPicker, UserAvatar } from "../components/UserAvatar.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/Reports.css";
 
 function Reports() {
   const { categoryId, subcategoryId, reportId } = useParams();
   const navigate = useNavigate();
-  const { user, logout, changePassword } = useAuth();
+  const { user, logout, updateProfile, changePassword } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isProfileDetailsOpen, setIsProfileDetailsOpen] = useState(false);
   const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
@@ -19,11 +20,52 @@ function Reports() {
     newPassword: "",
     confirmPassword: "",
   });
+  const [profileForm, setProfileForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    idNumber: "",
+    avatarUrl: "",
+  });
   const [formMessage, setFormMessage] = useState("");
 
   const querySectionRef = useRef(null);
   const userInitials =
     `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
+
+  function openProfileDetails() {
+    setProfileForm({
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      email: user.email || "",
+      idNumber: user.idNumber || "",
+      avatarUrl: user.avatarUrl || "",
+    });
+    setIsProfileDetailsOpen(true);
+    setIsProfileOpen(false);
+  }
+
+  function handleAvatarChange(avatarUrl) {
+    setProfileForm((current) => ({ ...current, avatarUrl }));
+  }
+
+  async function handleProfileSubmit(event) {
+    event.preventDefault();
+    setFormMessage("");
+    try {
+      const updatedUser = await updateProfile(profileForm);
+      setProfileForm({
+        firstName: updatedUser.firstName || "",
+        lastName: updatedUser.lastName || "",
+        email: updatedUser.email || "",
+        idNumber: updatedUser.idNumber || "",
+        avatarUrl: updatedUser.avatarUrl || "",
+      });
+      setFormMessage("Profile updated successfully.");
+    } catch (error) {
+      setFormMessage(error.message || "Unable to update your profile.");
+    }
+  }
   const selectedCategory =
     reportCategories.find((category) => category.id === categoryId) || null;
   const selectedSubcategory =
@@ -104,7 +146,11 @@ function Reports() {
               aria-expanded={isProfileOpen}
               onClick={() => setIsProfileOpen((isOpen) => !isOpen)}
             >
-              <div className="reports-topbar-avatar">{userInitials}</div>
+              <UserAvatar
+                user={user}
+                initials={userInitials}
+                className="reports-topbar-avatar"
+              />
               <div className="reports-topbar-user-copy">
                 <strong>
                   {user?.firstName} {user?.lastName}
@@ -120,12 +166,9 @@ function Reports() {
               <div className="reports-user-menu">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsProfileDetailsOpen(true);
-                    setIsProfileOpen(false);
-                  }}
+                  onClick={openProfileDetails}
                 >
-                  My Profile
+                  My profile
                 </button>
                 <button type="button" onClick={logout}>
                   Log out
@@ -136,9 +179,15 @@ function Reports() {
             {isProfileDetailsOpen ? (
               <div className="reports-user-details">
                 <div className="reports-user-details-header">
-                  <div className="reports-user-details-avatar">
-                    {userInitials}
-                  </div>
+                  <AvatarPicker
+                    user={{
+                      ...user,
+                      avatarUrl: profileForm.avatarUrl || user.avatarUrl,
+                    }}
+                    initials={userInitials}
+                    onChange={handleAvatarChange}
+                    className="reports-user-details-avatar"
+                  />
                   <div>
                     <strong>
                       {user?.firstName} {user?.lastName}
@@ -147,7 +196,10 @@ function Reports() {
                   </div>
                 </div>
 
-                <div className="reports-user-profile-form">
+                <form
+                  className="reports-user-profile-form"
+                  onSubmit={handleProfileSubmit}
+                >
                   <div className="site-user-form-row two-column">
                     <div>
                       <span>First Name</span>
@@ -168,6 +220,11 @@ function Reports() {
                       <strong>{user?.idNumber}</strong>
                     </div>
                   </div>
+                  <button type="submit" className="site-user-submit">
+                    Update profile
+                  </button>
+                </form>
+                <div className="reports-user-profile-form">
 
                   <button
                     type="button"
