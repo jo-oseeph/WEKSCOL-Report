@@ -1,8 +1,0 @@
-*.sqlite
-*.sqlite-wal
-*.sqlite-shm
-*.sqlite-journal
-*.db
-*.sqlite.corrupt-*
-server/data/
-server/data/*
