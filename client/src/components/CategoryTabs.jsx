@@ -20,9 +20,6 @@ function ChevronRight() {
   );
 }
 
-// Hover-driven cascading menu: Category -> Subcategory dropdown -> Report
-// flyout. Only the final report click fires a callback; hovering just
-// reveals/hides the next level (handled in CSS via :hover).
 function CategoryTabs({
   categories,
   selectedCategory,
