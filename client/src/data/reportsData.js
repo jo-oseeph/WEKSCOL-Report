@@ -44,10 +44,9 @@ export const reportCategories = [
         id: "leads-collection",
         name: "Leads Collection",
         reports: [
-          { id: "open-requests", name: "Open Requests Log", description: "Customer care requests that are still open or in progress.", parameters: [], results: { columns: [], rows: [] } },
-          { id: "resolved-requests", name: "Resolved Requests Log", description: "Customer care requests resolved through field action.", parameters: [], results: { columns: [], rows: [] } },
-          { id: "regional-summary", name: "Regional Summary", description: "Request volume, resolution and pending rates by region.", parameters: [], results: { columns: [], rows: [] } },
-          { id: "farmer-request-history", name: "Farmer Request History", description: "Request history grouped by farmer.", parameters: [], results: { columns: [], rows: [] } },
+          { id: "open-requests", name: "Open Request Log", description: "Customer care requests that are still open or in progress.", parameters: [], results: { columns: [], rows: [] } },
+          { id: "resolved-requests", name: "Resolved Request Log", description: "Customer care requests resolved through field action.", parameters: [], results: { columns: [], rows: [] } },
+          { id: "farmer-requests", name: "Farmers Request", description: "Farmer request history grouped by farmer and request type.", parameters: [], results: { columns: [], rows: [] } },
         ],
       },
       {
