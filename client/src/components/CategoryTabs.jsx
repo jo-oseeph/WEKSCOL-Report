@@ -1,9 +1,6 @@
 import React from "react";
 import "../styles/CategoryTabs.css";
 
-// Small chevrons so it's visually obvious each level opens a menu:
-// "v" = opens downward (category -> subcategory), ">" = opens sideways
-// (subcategory -> report), matching the direction each dropdown appears in.
 function ChevronDown() {
   return (
     <svg className="menu-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none">
