@@ -106,7 +106,10 @@
 }
 
 .report-results {
-  width: 100%;
+  width: min(1100px, calc(100vw - 120px));
+  max-width: none;
+  margin-left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -175,7 +178,8 @@
 }
 
 .report-table-wrap {
-  overflow-x: auto;
+  max-height: 620px;
+  overflow: auto;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
 }
@@ -226,9 +230,16 @@
 }
 
 .report-table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+}
+
+.report-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .report-table thead th {
@@ -257,4 +268,16 @@
 
 .report-table tbody tr:hover {
   background: var(--color-bg);
+}
+
+@media (max-width: 700px) {
+  .report-results {
+    width: 100%;
+    margin-left: 0;
+    transform: none;
+  }
+
+  .report-table-wrap {
+    max-height: 520px;
+  }
 }

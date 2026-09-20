@@ -69,6 +69,12 @@ function ReportViewer({ report }) {
   const visibleRows = result
     ? result.rows.slice((currentPage - 1) * RESULTS_PER_PAGE, currentPage * RESULTS_PER_PAGE)
     : [];
+  const firstVisibleRow = result && result.rows.length > 0
+    ? (currentPage - 1) * RESULTS_PER_PAGE + 1
+    : 0;
+  const lastVisibleRow = result
+    ? Math.min(currentPage * RESULTS_PER_PAGE, result.rows.length)
+    : 0;
 
   function goToPage(page) {
     setCurrentPage(Math.min(Math.max(page, 1), totalPages));
@@ -130,7 +136,7 @@ function ReportViewer({ report }) {
         <div className="report-results">
           <div className="report-results-toolbar">
             <span className="report-results-count">
-              {result.rows.length} record{result.rows.length === 1 ? "" : "s"} found
+              Showing {firstVisibleRow}–{lastVisibleRow} of {result.rows.length} record{result.rows.length === 1 ? "" : "s"}
             </span>
             <div className="report-results-actions">
               <button type="button" className="report-action-btn" onClick={() => download("pdf")}>Export PDF</button>
