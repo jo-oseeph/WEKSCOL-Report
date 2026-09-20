@@ -90,12 +90,9 @@ function createExportRoutes() {
       const result = await queryReport(request.params.reportId, request.query);
       const workbook = new ExcelJS.Workbook();
       const sheet = workbook.addWorksheet(result.name.slice(0, 31));
-      sheet.addRow([result.name]);
-      sheet.addRow([]);
       sheet.addRow(result.columns);
       result.rows.forEach((row) => sheet.addRow(result.columns.map((column) => row[column])));
-      sheet.getRow(1).font = { bold: true, size: 16 };
-      sheet.getRow(3).font = { bold: true };
+      sheet.getRow(1).font = { bold: true };
       sheet.columns.forEach((column) => { column.width = 20; });
       response.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       response.setHeader("Content-Disposition", `attachment; filename="${safeName(result.name)}.xlsx"`);

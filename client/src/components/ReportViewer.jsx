@@ -16,6 +16,7 @@ function ReportViewer({ report }) {
   const [locations, setLocations] = useState([]);
   const [result, setResult] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeVariant, setActiveVariant] = useState("detailed");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -42,15 +43,17 @@ function ReportViewer({ report }) {
     return params.toString();
   }, [query]);
 
-  async function handleGenerate(event) {
-    event.preventDefault();
+  async function loadReport(variant = "detailed") {
     setIsLoading(true);
     setError("");
     try {
-      const response = await fetch(`/api/reports/${report.id}?${queryString}`, { credentials: "include" });
+      const params = new URLSearchParams(queryString);
+      params.set("variant", variant);
+      const response = await fetch(`/api/reports/${report.id}?${params.toString()}`, { credentials: "include" });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Unable to generate report.");
       setResult(body);
+      setActiveVariant(body.variant || variant);
       setCurrentPage(1);
       setShowResults(true);
     } catch (requestError) {
@@ -61,8 +64,20 @@ function ReportViewer({ report }) {
     }
   }
 
+  async function handleGenerate(event) {
+    event.preventDefault();
+    await loadReport("detailed");
+  }
+
+  async function handleVariantChange(variant) {
+    if (variant === activeVariant || isLoading) return;
+    await loadReport(variant);
+  }
+
   function download(format) {
-    window.location.assign(`/api/reports/${report.id}/export.${format}${queryString ? `?${queryString}` : ""}`);
+    const params = new URLSearchParams(queryString);
+    params.set("variant", activeVariant);
+    window.location.assign(`/api/reports/${report.id}/export.${format}?${params.toString()}`);
   }
 
   const totalPages = result ? Math.max(1, Math.ceil(result.rows.length / RESULTS_PER_PAGE)) : 1;
@@ -134,6 +149,24 @@ function ReportViewer({ report }) {
 
       {showResults && result && (
         <div className="report-results">
+          <div className="report-results-heading">
+            <h3 className="report-results-title">{result.name}</h3>
+            <div className="report-variant-tabs" role="tablist" aria-label="Report view">
+              {(result.variants || ["detailed"]).map((variant) => (
+                <button
+                  key={variant}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeVariant === variant}
+                  className={`report-variant-tab${activeVariant === variant ? " is-active" : ""}`}
+                  onClick={() => handleVariantChange(variant)}
+                  disabled={isLoading}
+                >
+                  {variant === "detailed" ? "Detailed Report" : "Summary Report"}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="report-results-toolbar">
             <span className="report-results-count">
               Showing {firstVisibleRow}–{lastVisibleRow} of {result.rows.length} record{result.rows.length === 1 ? "" : "s"}

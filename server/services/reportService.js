@@ -14,62 +14,87 @@ const locations = {
 
 const reports = {
   "open-requests": {
-    name: "Open Requests Log",
+    name: "Open Request Log",
     description: "Customer care requests that are still open or in progress.",
-    sql: `
-      WITH source AS (${"__BASE__"})
-      SELECT response_id, submission_datetime AS date_of_submission, region, zone, section,
-        farmer_name, farmer_phone, request_type, request_details, rhoa_status,
-        remarks_customer_care, DATE_DIFF('day', CAST(submission_datetime AS DATE), CURRENT_DATE) AS days_open
-      FROM source
-      WHERE COALESCE(NULLIF(TRIM(rhoa_status), ''), 'Not Started') IN ('Not Started', 'In Progress')
-      __FILTERS__
-      ORDER BY days_open DESC, submission_datetime DESC
-    `,
+    variants: {
+      summary: `
+        WITH source AS (${"__BASE__"})
+        SELECT region, zone, section, village, COUNT(*) AS total_requests,
+          SUM(CASE WHEN COALESCE(NULLIF(TRIM(rhoa_status), ''), 'Not Started') <> 'Converted' THEN 1 ELSE 0 END) AS pending,
+          DATE_DIFF('day', CAST(submission_datetime AS DATE), CURRENT_DATE) AS days_open
+        FROM source
+        WHERE 1 = 1
+        __FILTERS__
+        GROUP BY region, zone, section, village, days_open
+        ORDER BY pending DESC
+      `,
+      detailed: `
+        WITH source AS (${"__BASE__"})
+        SELECT response_id, submission_datetime AS date_of_submission, region, zone, section,
+          farmer_name, farmer_phone, request_type, request_details, rhoa_status,
+          remarks_customer_care, days_open
+        FROM (
+          SELECT source.*, DATE_DIFF('day', CAST(submission_datetime AS DATE), CURRENT_DATE) AS days_open
+          FROM source
+        ) open_requests
+        WHERE COALESCE(NULLIF(TRIM(rhoa_status), ''), 'Not Started') IN ('Not Started', 'In Progress')
+        __FILTERS__
+        ORDER BY days_open DESC, date_of_submission DESC
+      `,
+    },
   },
   "resolved-requests": {
-    name: "Resolved Requests Log",
+    name: "Resolved Request Log",
     description: "Customer care requests resolved through field action.",
-    sql: `
-      WITH source AS (${"__BASE__"})
-      SELECT response_id, submission_datetime AS date_of_submission, region, zone,
-        farmer_name, request_type, closed_through_field_number, rhoa_remarks
-      FROM source
-      WHERE TRIM(rhoa_status) = 'Converted'
-      __FILTERS__
-      ORDER BY submission_datetime DESC
-    `,
+    variants: {
+      summary: `
+        WITH source AS (${"__BASE__"})
+        SELECT region, zone, section, village, COUNT(*) AS total_requests,
+          SUM(CASE WHEN TRIM(rhoa_status) = 'Converted' THEN 1 ELSE 0 END) AS resolved
+        FROM source
+        WHERE 1 = 1
+        __FILTERS__
+        GROUP BY region, zone, section, village
+        ORDER BY resolved DESC
+      `,
+      detailed: `
+        WITH source AS (${"__BASE__"})
+        SELECT response_id, submission_datetime AS date_of_submission, region, zone,
+          section, village, farmer_name, request_type, closed_through_field_number,
+          rhoa_remarks, remarks_customer_care
+        FROM source
+        WHERE TRIM(rhoa_status) = 'Converted'
+        __FILTERS__
+        ORDER BY date_of_submission DESC
+      `,
+    },
   },
-  "regional-summary": {
-    name: "Regional Summary",
-    description: "Request volume, resolution and pending rates by region.",
-    sql: `
-      WITH source AS (${"__BASE__"})
-      SELECT region, COUNT(*) AS total_requests,
-        SUM(CASE WHEN TRIM(rhoa_status) = 'Converted' THEN 1 ELSE 0 END) AS resolved,
-        SUM(CASE WHEN COALESCE(NULLIF(TRIM(rhoa_status), ''), 'Not Started') <> 'Converted' THEN 1 ELSE 0 END) AS pending,
-        ROUND(100.0 * SUM(CASE WHEN TRIM(rhoa_status) = 'Converted' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) AS resolved_rate_pct
-      FROM source
-      WHERE 1 = 1
-      __FILTERS__
-      GROUP BY region
-      ORDER BY total_requests DESC
-    `,
-  },
-  "farmer-request-history": {
-    name: "Farmer Request History",
-    description: "Request history grouped by farmer.",
-    sql: `
-      WITH source AS (${"__BASE__"})
-      SELECT response_id AS farmer_id, farmer_name, farmer_phone, region,
-        COUNT(*) AS total_requests, STRING_AGG(request_type, ', ') AS request_types,
-        MAX(submission_datetime) AS most_recent_request
-      FROM source
-      WHERE 1 = 1
-      __FILTERS__
-      GROUP BY response_id, farmer_name, farmer_phone, region
-      ORDER BY total_requests DESC, most_recent_request DESC
-    `,
+  "farmer-requests": {
+    name: "Farmers Request",
+    description: "Farmer request history grouped by farmer and request type.",
+    variants: {
+      summary: `
+        WITH source AS (${"__BASE__"})
+        SELECT farmer_id, farmer_name, region, zone, section, village,
+          COUNT(*) AS total_requests, STRING_AGG(request_type, ', ') AS request_types,
+          MAX(submission_datetime) AS most_recent_request
+        FROM source
+        WHERE 1 = 1
+        __FILTERS__
+        GROUP BY farmer_id, farmer_name, region, zone, section, village
+        ORDER BY total_requests DESC
+      `,
+      detailed: `
+        WITH source AS (${"__BASE__"})
+        SELECT farmer_id, farmer_name, farmer_phone, region, zone, section, village,
+          request_type, MAX(submission_datetime) AS most_recent_request
+        FROM source
+        WHERE 1 = 1
+        __FILTERS__
+        GROUP BY farmer_id, farmer_name, farmer_phone, region, zone, section, village, request_type
+        ORDER BY most_recent_request DESC
+      `,
+    },
   },
 };
 
@@ -86,6 +111,8 @@ function baseQuery() {
     TRIM("Region") AS region,
     TRIM("Zone") AS zone,
     TRIM("Section") AS section,
+    TRIM("Block/Village") AS village,
+    TRIM("Farmer Id") AS farmer_id,
     TRIM("Famer Name.") AS farmer_name,
     TRIM("Farmer Phone No.") AS farmer_phone,
     TRIM("Requests") AS request_type,
@@ -195,7 +222,12 @@ function normalizeDatabaseValue(value) {
 }
 
 export function getReportCatalog() {
-  return Object.entries(reports).map(([id, report]) => ({ id, name: report.name, description: report.description }));
+  return Object.entries(reports).map(([id, report]) => ({
+    id,
+    name: report.name,
+    description: report.description,
+    variants: Object.keys(report.variants),
+  }));
 }
 
 export async function getReportFilters() {
@@ -220,11 +252,21 @@ export async function getReportFilters() {
 export async function queryReport(reportId, query = {}) {
   const report = reports[reportId];
   if (!report) throw createError("Report not found.", 404);
+  const variant = query.variant === "summary" ? "summary" : "detailed";
   const filterSet = buildFilters(query);
-  const sql = report.sql.replace("__BASE__", baseQuery()).replace("__FILTERS__", filterSet.sql);
+  const sql = report.variants[variant].replace("__BASE__", baseQuery()).replace("__FILTERS__", filterSet.sql);
   const rawRows = await withConnection((connection) => run(connection, sql, filterSet.values));
   const rows = rawRows.map(normalizeDatabaseValue);
-  return { id: reportId, name: report.name, description: report.description, filters: filterSet.summary, columns: columnsFromRows(rows), rows };
+  return {
+    id: reportId,
+    name: report.name,
+    description: report.description,
+    variant,
+    variants: Object.keys(report.variants),
+    filters: filterSet.summary,
+    columns: columnsFromRows(rows),
+    rows,
+  };
 }
 
 export { locations, reports };
