@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
-const projectDirectory = path.join(serverDirectory, "..", "..");
+const projectDirectory = path.join(serverDirectory, "..");
 
 const envFilePath = path.join(projectDirectory, ".env");
 
@@ -19,7 +19,7 @@ const loadConfig = () => {
     port: Number(process.env.PORT || 3001),
     databasePath: process.env.DATABASE_PATH
       ? path.resolve(projectDirectory, process.env.DATABASE_PATH)
-      : path.join(projectDirectory, "server", "data", "wescol.sqlite"),
+      : path.join(projectDirectory, "data", "wescol.sqlite"),
     session: {
       cookieName: "wescol_session",
       maxAge: Number(process.env.SESSION_MAX_AGE || 604800000),
