@@ -4,11 +4,13 @@ import loadConfig from "./config/env.js";
 import createDatabase from "./db/connection.js";
 import runMigrations from "./db/migrate.js";
 import createUserRepository from "./db/userRepository.js";
+import createPasswordResetTokenRepository from "./db/passwordResetTokenRepository.js";
 import createSessionRepository from "./db/sessionRepository.js";
 import createAuthController from "./controllers/authController.js";
 import createAuthRoutes from "./routes/authRoutes.js";
 import createAuthService from "./services/authService.js";
 import createSessionService from "./services/sessionService.js";
+import createEmailService from "./services/emailService.js";
 import createReportRoutes from "./routes/reportRoutes.js";
 import requireAuth from "./middleware/authMiddleware.js";
 import errorHandler from "./middleware/errorHandler.js";
@@ -19,13 +21,38 @@ const db = createDatabase(config.databasePath);
 runMigrations(db);
 
 const userRepository = createUserRepository(db);
+const passwordResetTokenRepository = createPasswordResetTokenRepository(db);
 const sessionRepository = createSessionRepository(db);
 const sessionService = createSessionService({
   sessionRepository,
   userRepository,
   sessionConfig: config.session,
 });
-const authService = createAuthService({ userRepository, sessionService });
+const emailService = createEmailService(config.email);
+const authService = createAuthService({
+  userRepository,
+  sessionService,
+  passwordResetTokenRepository,
+  emailService,
+  clientUrl: config.clientUrl,
+});
+
+if (!emailService.isConfigured) {
+  console.warn(
+    "Password reset email is disabled: configure SMTP_USER and SMTP_PASSWORD in the server .env file.",
+  );
+} else {
+  emailService.verifyConnection().then((result) => {
+    if (result.ok) {
+      console.log("Gmail SMTP connection verified for password reset email.");
+    } else {
+      console.error("Gmail SMTP connection verification failed:", {
+        code: result.code,
+        message: result.reason,
+      });
+    }
+  });
+}
 const authController = createAuthController({
   authService,
   sessionService,

@@ -72,8 +72,13 @@ function validateProfile(details = {}) {
 const createAuthService = ({
   userRepository,
   sessionService,
+  passwordResetTokenRepository,
+  emailService,
+  clientUrl,
   passwordSecurity = security,
 }) => {
+  const passwordResetTokenLifetime = 30 * 60 * 1000;
+
   return {
     async register(details) {
       const input = validateRegistration(details);
@@ -159,6 +164,64 @@ const createAuthService = ({
         userId,
         await passwordSecurity.hashPassword(newPassword),
       );
+    },
+    async requestPasswordReset(details = {}) {
+      const email =
+        typeof details.email === "string" ? details.email.trim().toLowerCase() : "";
+      if (!emailPattern.test(email)) return;
+
+      passwordResetTokenRepository.deleteExpired(Date.now());
+      const user = userRepository.findByEmail(email);
+      if (!user) return;
+
+      const token = passwordSecurity.createResetToken();
+      const now = Date.now();
+      passwordResetTokenRepository.deleteForUser(user.id);
+      passwordResetTokenRepository.create({
+        tokenHash: passwordSecurity.hashToken(token),
+        userId: user.id,
+        expiresAt: now + passwordResetTokenLifetime,
+        createdAt: now,
+      });
+
+      try {
+        const resetUrl = `${clientUrl.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
+        await emailService.sendPasswordReset({ to: user.email, resetUrl });
+      } catch (error) {
+        passwordResetTokenRepository.deleteForUser(user.id);
+        console.error("Unable to send password reset email:", {
+          code: error?.code,
+          responseCode: error?.responseCode,
+          message: error?.message,
+        });
+      }
+    },
+    async resetPassword(details = {}) {
+      const token = typeof details.token === "string" ? details.token.trim() : "";
+      const newPassword = typeof details.newPassword === "string" ? details.newPassword : "";
+      const confirmPassword = typeof details.confirmPassword === "string" ? details.confirmPassword : "";
+
+      if (!token || newPassword.length < 6) {
+        throw createServiceError("Use a password with at least 6 characters.", 400);
+      }
+      if (newPassword !== confirmPassword) {
+        throw createServiceError("Passwords do not match.", 400);
+      }
+
+      passwordResetTokenRepository.deleteExpired(Date.now());
+      const resetToken = passwordResetTokenRepository.consume(
+        passwordSecurity.hashToken(token),
+        Date.now(),
+      );
+      if (!resetToken) {
+        throw createServiceError("This password reset link is invalid or has expired.", 400);
+      }
+
+      userRepository.updatePassword(
+        resetToken.user_id,
+        await passwordSecurity.hashPassword(newPassword),
+      );
+      sessionService.deleteUserSessions(resetToken.user_id);
     },
   };
 };

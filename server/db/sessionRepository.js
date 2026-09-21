@@ -11,6 +11,9 @@ const createSessionRepository = (db) => {
   const deleteExpiredSessionsStatement = db.prepare(
     "DELETE FROM sessions WHERE expires_at <= ?",
   );
+  const deleteUserSessionsStatement = db.prepare(
+    "DELETE FROM sessions WHERE user_id = ?",
+  );
 
   return {
     create: ({ tokenHash, userId, expiresAt }) =>
@@ -18,6 +21,7 @@ const createSessionRepository = (db) => {
     findValid: (tokenHash, now) => findValidSessionStatement.get(tokenHash, now),
     delete: (tokenHash) => deleteSessionStatement.run(tokenHash),
     deleteExpired: (now) => deleteExpiredSessionsStatement.run(now),
+    deleteForUser: (userId) => deleteUserSessionsStatement.run(userId),
   };
 };
 

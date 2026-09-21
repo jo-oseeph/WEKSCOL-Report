@@ -580,6 +580,32 @@
   text-decoration: underline;
 }
 
+.recovery-page {
+  align-items: center;
+  justify-content: center;
+  background-image:
+    linear-gradient(90deg, rgba(8, 31, 20, 0.42), rgba(8, 31, 20, 0.78)),
+    url("/images/auth-slide-1.jpg");
+}
+
+.recovery-panel {
+  width: min(100%, 560px);
+  min-width: 0;
+  min-height: auto;
+  margin: 0;
+}
+
+.recovery-description {
+  margin-top: 12px;
+  color: rgba(242, 251, 246, 0.72);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.recovery-panel .auth-toggle {
+  margin-bottom: 0;
+}
+
 @media (max-width: 860px) {
   .auth-page {
     height: auto;

@@ -50,13 +50,27 @@ export function AuthProvider({ children }) {
     });
   }
 
+  async function requestPasswordReset(email) {
+    return request("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async function resetPassword(details) {
+    return request("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify(details),
+    });
+  }
+
   async function logout() {
     await request("/auth/logout", { method: "POST" });
     setUser(null);
     navigate("/");
   }
 
-  return <AuthContext.Provider value={{ user, isLoading, login, register, updateProfile, changePassword, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, isLoading, login, register, updateProfile, changePassword, requestPasswordReset, resetPassword, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

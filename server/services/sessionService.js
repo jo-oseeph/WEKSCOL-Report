@@ -41,6 +41,9 @@ const createSessionService = ({ sessionRepository, userRepository, sessionConfig
     deleteSession(token) {
       if (token) sessionRepository.delete(hashToken(token));
     },
+    deleteUserSessions(userId) {
+      sessionRepository.deleteForUser(userId);
+    },
     removeExpiredSessions,
   };
 };

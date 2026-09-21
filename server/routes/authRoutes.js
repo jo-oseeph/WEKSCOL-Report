@@ -6,6 +6,8 @@ const createAuthRoutes = (controller) => {
   router.post("/register", controller.register);
   router.post("/login", controller.login);
   router.post("/logout", controller.logout);
+  router.post("/forgot-password", controller.requestPasswordReset);
+  router.post("/reset-password", controller.resetPassword);
   router.put("/profile", controller.updateProfile);
   router.put("/password", controller.changePassword);
   return router;

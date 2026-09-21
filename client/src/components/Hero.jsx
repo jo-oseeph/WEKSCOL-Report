@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/Hero.css";
 
@@ -107,7 +108,7 @@ function Hero() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login: authenticate, register: createAccount } = useAuth();
+  const { user, login: authenticate, register: createAccount } = useAuth();
   const formRef = useRef(null);
   const activeSlideContent = heroSlides[activeSlide];
 
@@ -117,6 +118,10 @@ function Hero() {
     }, 6000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    setLogin(initialLogin);
+  }, [user]);
 
   const switchMode = (next) => {
     if (next === mode) return;
@@ -138,6 +143,7 @@ function Hero() {
     setIsSubmitting(true);
     try {
       await authenticate({ email: login.username, password: login.password });
+      setLogin(initialLogin);
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -216,14 +222,18 @@ function Hero() {
 
           <div key={mode} className="auth-form-wrap" ref={formRef}>
             {mode === "login" ? (
-              <form className="auth-form" onSubmit={handleLoginSubmit}>
+              <form
+                className="auth-form"
+                autoComplete="off"
+                onSubmit={handleLoginSubmit}
+              >
                 <div className="auth-field">
                   <label htmlFor="username">Username</label>
                   <input
                     id="username"
                     name="username"
                     type="text"
-                    autoComplete="username"
+                    autoComplete="off"
                     value={login.username}
                     onChange={handleLoginChange}
                     placeholder="Username"
@@ -237,7 +247,7 @@ function Hero() {
                     id="password"
                     name="password"
                     type="password"
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                     value={login.password}
                     onChange={handleLoginChange}
                     placeholder="Password"
@@ -246,9 +256,9 @@ function Hero() {
                 </div>
 
                 <div className="auth-row">
-                  <a className="auth-link-quiet" href="/forgot-password">
+                  <Link className="auth-link-quiet" to="/forgot-password">
                     Forgot password?
-                  </a>
+                  </Link>
                 </div>
 
                 {error ? <p className="auth-error">{error}</p> : null}

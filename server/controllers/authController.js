@@ -73,6 +73,24 @@ const createAuthController = ({ authService, sessionService, sessionConfig }) =>
         next(error);
       }
     },
+    async requestPasswordReset(request, response, next) {
+      try {
+        await authService.requestPasswordReset(request.body);
+        response.json({
+          message: "If an account exists for that email, a password reset link has been sent.",
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+    async resetPassword(request, response, next) {
+      try {
+        await authService.resetPassword(request.body);
+        response.json({ message: "Your password has been reset. You can now sign in." });
+      } catch (error) {
+        next(error);
+      }
+    },
   };
 };
 

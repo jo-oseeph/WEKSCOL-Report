@@ -5,6 +5,8 @@ const createSessionToken = () => {
   return crypto.randomBytes(32).toString("hex");
 };
 
+const createResetToken = createSessionToken;
+
 const hashToken = (token) => {
   return crypto.createHash("sha256").update(token).digest("hex");
 };
@@ -17,5 +19,5 @@ const comparePassword = (password, passwordHash) => {
   return bcrypt.compare(password, passwordHash);
 };
 
-export { comparePassword, createSessionToken, hashPassword, hashToken };
-export default { comparePassword, createSessionToken, hashPassword, hashToken };
+export { comparePassword, createResetToken, createSessionToken, hashPassword, hashToken };
+export default { comparePassword, createResetToken, createSessionToken, hashPassword, hashToken };
