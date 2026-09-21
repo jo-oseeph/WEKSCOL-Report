@@ -16,10 +16,10 @@ function filtersLabel(filters) {
   return Object.entries(filters).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`).join(" | ") || "All records";
 }
 
-const PDF_ROWS_PER_PAGE = 50;
 const PDF_MARGIN = 36;
 const PDF_HEADER_HEIGHT = 72;
-const PDF_FOOTER_HEIGHT = 24;
+const PDF_FOOTER_HEIGHT = 30;
+const PDF_PAGE_HEIGHT = 842;
 const PDF_CELL_PADDING = 4;
 const PDF_FONT_SIZE = 9;
 const PDF_LINE_HEIGHT = 12;
@@ -56,9 +56,28 @@ function getPdfRowHeight(row, columns, widths) {
   return Math.max(PDF_LINE_HEIGHT, lineCount * PDF_LINE_HEIGHT + 4);
 }
 
-function getPdfPageHeight(rows, columns, widths) {
-  const rowsHeight = rows.reduce((total, row) => total + getPdfRowHeight(row, columns, widths), 0);
-  return PDF_MARGIN + PDF_HEADER_HEIGHT + rowsHeight + PDF_FOOTER_HEIGHT + PDF_MARGIN;
+function splitPdfRows(rows, columns, widths, headerHeight) {
+  const tableHeightAvailable = PDF_PAGE_HEIGHT
+    - PDF_MARGIN * 2
+    - PDF_HEADER_HEIGHT
+    - PDF_FOOTER_HEIGHT;
+  const pages = [];
+  let pageRows = [];
+  let pageRowsHeight = headerHeight;
+
+  rows.forEach((row) => {
+    const rowHeight = getPdfRowHeight(row, columns, widths);
+    if (pageRows.length > 0 && pageRowsHeight + rowHeight > tableHeightAvailable) {
+      pages.push(pageRows);
+      pageRows = [];
+      pageRowsHeight = headerHeight;
+    }
+    pageRows.push(row);
+    pageRowsHeight += rowHeight;
+  });
+
+  if (pageRows.length || pages.length === 0) pages.push(pageRows);
+  return pages;
 }
 
 function createExportRoutes() {
@@ -107,17 +126,13 @@ function createExportRoutes() {
     try {
       const result = await queryReport(request.params.reportId, request.query);
       const userName = `${request.user.firstName} ${request.user.lastName}`;
-      const pages = [];
-      for (let index = 0; index < result.rows.length; index += PDF_ROWS_PER_PAGE) {
-        pages.push(result.rows.slice(index, index + PDF_ROWS_PER_PAGE));
-      }
-      if (!pages.length) pages.push([]);
-
       const { widths, pageWidth } = getPdfColumnWidths(result.columns, result.rows);
-      const pageHeights = pages.map((pageRows) => getPdfPageHeight(pageRows, result.columns, widths));
+      const headerRow = Object.fromEntries(result.columns.map((column) => [column, column]));
+      const headerHeight = getPdfRowHeight(headerRow, result.columns, widths);
+      const pages = splitPdfRows(result.rows, result.columns, widths, headerHeight);
       const document = new PDFDocument({
         margin: PDF_MARGIN,
-        size: [pageWidth, pageHeights[0]],
+        size: [pageWidth, PDF_PAGE_HEIGHT],
         autoFirstPage: false,
       });
       response.setHeader("Content-Type", "application/pdf");
@@ -126,7 +141,7 @@ function createExportRoutes() {
 
       const drawHeader = () => {
         const contentWidth = pageWidth - PDF_MARGIN * 2;
-        const metadataWidth = Math.min(220, contentWidth * 0.3);
+        const metadataWidth = Math.min(260, contentWidth * 0.3);
         const metadataX = pageWidth - PDF_MARGIN - metadataWidth;
 
         document.fillColor("#000000").font("Helvetica").fontSize(11)
@@ -138,23 +153,22 @@ function createExportRoutes() {
           .text(`Printed by: ${userName}`, metadataX, 39, { width: metadataWidth, align: "right" });
       };
 
-      const drawFooter = () => {
-        const pageNumber = document.page.number;
+      const drawFooter = (pageNumber) => {
         const footerY = document.page.height - PDF_MARGIN - PDF_FOOTER_HEIGHT + 5;
 
         document.font("Helvetica").fontSize(8).fillColor("#000000")
-          .text(`Page ${pageNumber} of ${pages.length}`, PDF_MARGIN, footerY, { width: pageWidth - PDF_MARGIN * 2, align: "center" });
+          .text(`Page ${pageNumber}`, PDF_MARGIN, footerY, { width: pageWidth - PDF_MARGIN * 2, align: "center" });
       };
 
       pages.forEach((pageRows, pageIndex) => {
-        document.addPage({ size: [pageWidth, pageHeights[pageIndex]], margin: PDF_MARGIN });
+        document.addPage({ size: [pageWidth, PDF_PAGE_HEIGHT], margin: PDF_MARGIN });
         drawHeader();
 
         let y = PDF_MARGIN + PDF_HEADER_HEIGHT;
-        const headerRow = Object.fromEntries(result.columns.map((column) => [column, column]));
-        const headerHeight = getPdfRowHeight(headerRow, result.columns, widths);
+        const tableWidth = widths.reduce((total, width) => total + width, 0);
+        const tableX = (pageWidth - tableWidth) / 2;
         const drawRow = (row, rowHeight) => {
-          let x = PDF_MARGIN;
+          let x = tableX;
           document.font("Helvetica").fontSize(PDF_FONT_SIZE).fillColor("#000000");
           result.columns.forEach((column, index) => {
             document.rect(x, y, widths[index], rowHeight).strokeColor("#000000").stroke();
@@ -171,7 +185,7 @@ function createExportRoutes() {
 
         drawRow(headerRow, headerHeight);
         pageRows.forEach((row) => drawRow(row, getPdfRowHeight(row, result.columns, widths)));
-        drawFooter();
+        drawFooter(pageIndex + 1);
       });
 
       document.end();
