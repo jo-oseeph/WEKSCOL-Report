@@ -36,6 +36,18 @@
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
+.category-menu-icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: #b9d4c0;
+}
+
+.category-menu-trigger-active .category-menu-icon,
+.category-menu-item:hover > .category-menu-trigger .category-menu-icon {
+  color: #fff;
+}
+
 .category-menu-item:hover > .category-menu-trigger,
 .category-menu-trigger-active {
   background: rgba(255, 255, 255, 0.14);

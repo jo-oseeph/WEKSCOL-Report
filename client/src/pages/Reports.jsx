@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { FaHome } from "react-icons/fa";
+import { reportCategories } from "../data/reportsData";
 import CategoryTabs from "../components/CategoryTabs.jsx";
 import ReportViewer from "../components/ReportViewer.jsx";
 import ReportsOverview from "../components/ReportsOverview.jsx";
@@ -27,31 +29,10 @@ function Reports() {
     avatarUrl: "",
   });
   const [formMessage, setFormMessage] = useState("");
-  const [reportCategories, setReportCategories] = useState([]);
-  const [catalogError, setCatalogError] = useState("");
 
   const querySectionRef = useRef(null);
   const userInitials =
     `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
-
-  // Loads the report catalog from the backend for the navigation menu.
-  useEffect(() => {
-    let isMounted = true;
-
-    fetch("/api/reports/catalog", { credentials: "include" })
-      .then((response) => response.json().then((body) => ({ response, body })))
-      .then(({ response, body }) => {
-        if (!response.ok) throw new Error(body.error || "Unable to load report catalog.");
-        if (isMounted) setReportCategories(body.categories || []);
-      })
-      .catch((error) => {
-        if (isMounted) setCatalogError(error.message);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   function openProfileDetails() {
     setProfileForm({
@@ -148,6 +129,7 @@ function Reports() {
 
           <div className="reports-navigation">
             <Link className="reports-home-link" to="/">
+              <FaHome className="reports-navigation-icon" aria-hidden="true" />
               Home
             </Link>
             <CategoryTabs
@@ -333,7 +315,6 @@ function Reports() {
 
       <main className="reports-page">
         <ReportsOverview hasSelectedReport={Boolean(selectedReport)} />
-        {catalogError ? <p className="report-error">{catalogError}</p> : null}
         {selectedReport ? (
           <section
             className="reports-content-panel reports-query-panel"

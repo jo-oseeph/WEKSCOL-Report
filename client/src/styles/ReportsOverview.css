@@ -7,7 +7,7 @@
 }
 
 .reports-overview-heading {
-  width: min(100%, 1000px);
+  width: min(100%, 928px);
   margin-inline: auto;
   display: flex;
   align-items: flex-end;
@@ -41,7 +41,7 @@
 }
 
 .reports-stat-grid {
-  width: min(100%, 1000px);
+  width: min(100%, 928px);
   margin-inline: auto;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 220px));
@@ -139,6 +139,11 @@
 }
 
 @media (max-width: 900px) {
+  .reports-overview-heading,
+  .reports-stat-grid {
+    width: 100%;
+  }
+
   .reports-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

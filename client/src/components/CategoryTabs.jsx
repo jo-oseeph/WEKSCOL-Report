@@ -1,5 +1,20 @@
 import React from "react";
+import {
+  FaIndustry,
+  FaMoneyBillWave,
+  FaSeedling,
+  FaTruck,
+  FaUsers,
+} from "react-icons/fa";
 import "../styles/CategoryTabs.css";
+
+const categoryIcons = {
+  agriculture: FaSeedling,
+  transport: FaTruck,
+  finance: FaMoneyBillWave,
+  factory: FaIndustry,
+  hr: FaUsers,
+};
 
 function ChevronDown() {
   return (
@@ -15,6 +30,11 @@ function ChevronRight() {
       <path d="M3.5 2L6.5 5L3.5 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
+}
+
+function CategoryIcon({ categoryId }) {
+  const Icon = categoryIcons[categoryId];
+  return Icon ? <Icon className="category-menu-icon" aria-hidden="true" /> : null;
 }
 
 function CategoryTabs({
@@ -38,6 +58,7 @@ function CategoryTabs({
                   : "")
               }
             >
+              <CategoryIcon categoryId={category.id} />
               {category.name}
               <ChevronDown />
             </button>

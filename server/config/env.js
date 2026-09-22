@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
-const projectDirectory = path.join(serverDirectory, "..", "..");
+const projectDirectory = path.join(serverDirectory, "..");
 
 const envFilePath = path.join(projectDirectory, ".env");
 
