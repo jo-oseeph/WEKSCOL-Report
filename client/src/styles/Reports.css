@@ -44,6 +44,9 @@
 }
 
 .reports-home-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   flex: none;
   color: #d9eee0;
   font-size: 12px;
@@ -51,6 +54,12 @@
   padding-right: 16px;
   margin-right: 4px;
   border-right: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.reports-navigation-icon {
+  width: 13px;
+  height: 13px;
+  flex: none;
 }
 
 .reports-home-link:hover {

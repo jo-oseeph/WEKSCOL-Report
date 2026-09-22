@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { FaHome } from "react-icons/fa";
 import { reportCategories } from "../data/reportsData";
 import CategoryTabs from "../components/CategoryTabs.jsx";
 import ReportViewer from "../components/ReportViewer.jsx";
@@ -128,6 +129,7 @@ function Reports() {
 
           <div className="reports-navigation">
             <Link className="reports-home-link" to="/">
+              <FaHome className="reports-navigation-icon" aria-hidden="true" />
               Home
             </Link>
             <CategoryTabs
