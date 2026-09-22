@@ -13,6 +13,7 @@ function ReportViewer({ report }) {
   );
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [month, setMonth] = useState("");
   const [locations, setLocations] = useState([]);
   const [result, setResult] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -21,20 +22,23 @@ function ReportViewer({ report }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/reports/filters", { credentials: "include" })
+    const filterSource = ["cane-supply", "daily-weighment"].includes(report.id) ? "?source=harvesting" : "";
+    fetch(`/api/reports/filters${filterSource}`, { credentials: "include" })
       .then((response) => response.json().then((body) => ({ response, body })))
       .then(({ response, body }) => {
         if (!response.ok) throw new Error(body.error || "Unable to load filters.");
         setLocations(body.locations || []);
       })
       .catch((requestError) => setError(requestError.message));
-  }, []);
+  }, [report.id]);
 
   const query = useMemo(() => {
     const [first, second, zone, section] = locationSelection;
-    if (["cane-supply", "daily-weighment"].includes(report.id)) return { unit: first, sector: second, zone, section, dateFrom, dateTo };
+    if (["cane-supply", "daily-weighment"].includes(report.id)) {
+      return { unit: first, sector: second, zone, section, dateFrom, dateTo, ...(report.id === "cane-supply" && month ? { month } : {}) };
+    }
     return { plant: first, region: second, zone, section, dateFrom, dateTo };
-  }, [locationSelection, dateFrom, dateTo, report.id]);
+  }, [locationSelection, dateFrom, dateTo, month, report.id]);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -44,25 +48,15 @@ function ReportViewer({ report }) {
     return params.toString();
   }, [query]);
 
-  const filterLocations = ["cane-supply", "daily-weighment"].includes(report.id)
-    ? locations.map((location) => ({ ...location, plant: location.unit || location.plant, region: location.sector || location.region }))
-    : locations;
+  const isHarvesting = ["cane-supply", "daily-weighment"].includes(report.id);
+  const filterLocations = locations;
 
-  function getAutomaticSummaryGroup() {
-    const [, sector, zone, section] = locationSelection;
-    if (section && section !== "all") return "section";
-    if (zone && zone !== "all") return "zone";
-    if (sector && sector !== "all") return "sector";
-    return "unit";
-  }
-
-  async function loadReport(variant = "detailed", group = getAutomaticSummaryGroup()) {
+  async function loadReport(variant = "detailed") {
     setIsLoading(true);
     setError("");
     try {
       const params = new URLSearchParams(queryString);
       params.set("variant", variant);
-      if (variant === "summary") params.set("group", group);
       const response = await fetch(`/api/reports/${report.id}?${params.toString()}`, { credentials: "include" });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Unable to generate report.");
@@ -85,13 +79,12 @@ function ReportViewer({ report }) {
 
   async function handleVariantChange(variant) {
     if (variant === activeVariant || isLoading) return;
-    await loadReport(variant, variant === "summary" ? getAutomaticSummaryGroup() : undefined);
+    await loadReport(variant);
   }
 
   function download(format) {
     const params = new URLSearchParams(queryString);
     params.set("variant", activeVariant);
-    if (activeVariant === "summary") params.set("group", result?.group || getAutomaticSummaryGroup());
     window.location.assign(`/api/reports/${report.id}/export.${format}?${params.toString()}`);
   }
 
@@ -124,7 +117,8 @@ function ReportViewer({ report }) {
             selection={locationSelection}
             onChange={setLocationSelection}
             locations={filterLocations}
-            labels={["cane-supply", "daily-weighment"].includes(report.id) ? ["Unit", "Sector", "Zone", "Section"] : undefined}
+            labels={isHarvesting ? ["Unit", "Sector", "Zone", "Section"] : undefined}
+            fields={isHarvesting ? ["unit", "sector", "zone", "section"] : undefined}
           />
         </div>
 
@@ -152,6 +146,21 @@ function ReportViewer({ report }) {
 
           </div>
         </div>
+
+        {report.id === "cane-supply" ? (
+          <div className="report-filter-group">
+            <span className="report-filter-group-label">Monthly Summary</span>
+            <div className="report-filter-field">
+              <label htmlFor="month">Month</label>
+              <input
+                id="month"
+                type="month"
+                value={month}
+                onChange={(event) => setMonth(event.target.value)}
+              />
+            </div>
+          </div>
+        ) : null}
 
         <div className="report-filter-actions">
           <button type="submit" className="report-generate-btn">
