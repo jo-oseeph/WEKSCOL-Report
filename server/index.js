@@ -37,11 +37,14 @@ const authService = createAuthService({
   clientUrl: config.clientUrl,
 });
 
-if (!emailService.isConfigured) {
-  console.warn(
-    "Password reset email is disabled: configure SMTP_USER and SMTP_PASSWORD in the server .env file.",
-  );
-} else {
+const verifyEmailConnection = () => {
+  if (!emailService.isConfigured) {
+    console.warn(
+      "Password reset email is disabled: configure SMTP_USER and SMTP_PASSWORD in the server .env file.",
+    );
+    return;
+  }
+
   emailService.verifyConnection().then((result) => {
     if (result.ok) {
       console.log("Gmail SMTP connection verified for password reset email.");
@@ -52,7 +55,8 @@ if (!emailService.isConfigured) {
       });
     }
   });
-}
+};
+
 const authController = createAuthController({
   authService,
   sessionService,
@@ -73,14 +77,42 @@ app.use(errorHandler);
 
 const server = app.listen(config.port, () => {
   console.log(`WESCOL server listening on http://localhost:${config.port}`);
+  verifyEmailConnection();
 });
 
-const shutdown = () => {
+server.on("error", (error) => {
+  if (error?.code === "EADDRINUSE") {
+    console.error(
+      `WESCOL server could not start: port ${config.port} is already in use. Stop the existing server or use a different PORT.`,
+    );
+  } else {
+    console.error("WESCOL server failed:", {
+      code: error?.code,
+      message: error?.message,
+    });
+  }
+  db.close();
+  process.exit(1);
+});
+
+let isShuttingDown = false;
+const shutdown = (signal) => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  console.warn(`WESCOL server received ${signal}; shutting down.`);
+
   server.close(() => {
     db.close();
     process.exit(0);
   });
 };
 
-process.once("SIGINT", shutdown);
-process.once("SIGTERM", shutdown);
+process.once("SIGINT", () => shutdown("SIGINT"));
+process.once("SIGTERM", () => shutdown("SIGTERM"));
+process.on("uncaughtException", (error) => {
+  console.error("WESCOL server encountered an uncaught exception:", error);
+  shutdown("uncaughtException");
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("WESCOL server encountered an unhandled promise rejection:", reason);
+});
