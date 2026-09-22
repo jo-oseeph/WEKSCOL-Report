@@ -2,6 +2,7 @@ import { Router } from "express";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import { getReportCatalog, getReportFilters, queryReport } from "../services/reportService.js";
+import { getHarvestingFilters } from "../services/harvestingReportService.js";
 
 function safeName(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -86,7 +87,7 @@ function createExportRoutes() {
   router.get("/catalog", (request, response) => response.json({ reports: getReportCatalog() }));
   router.get("/filters", async (request, response, next) => {
     try {
-      response.json(await getReportFilters());
+      response.json(request.query.source === "harvesting" ? await getHarvestingFilters() : await getReportFilters());
     } catch (error) {
       next(error);
     }

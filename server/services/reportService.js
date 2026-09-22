@@ -2,9 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import duckdb from "duckdb";
+import ExcelJS from "exceljs";
+import { queryHarvestingReport } from "./harvestingReportService.js";
 
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
 const workbookPath = path.resolve(serverDirectory, "../../reports/Customer Care.xlsx");
+const weighmentDataPath = process.env.WEIGHMENT_DATA_PATH
+  ? path.resolve(serverDirectory, "..", process.env.WEIGHMENT_DATA_PATH)
+  : "";
 
 const locations = {
   Naitiri: ["Kitale", "Misikhu", "Naitiri"],
@@ -96,6 +101,34 @@ const reports = {
       `,
     },
   },
+  "daily-weighment": {
+    name: "Daily Weighment Report",
+    description: "Daily weighment details and summaries by unit, sector, zone, section and month.",
+    variants: {
+      detailed: "__NOTEBOOK__",
+      summary: "__NOTEBOOK__",
+    },
+    summaryGroups: ["unit", "sector", "zone", "section", "month"],
+    source: "notebook",
+  },
+  "cane-supply": {
+    name: "Cane Supply",
+    description: "Cane supply details and summaries by unit, sector, zone, section and month.",
+    variants: {
+      detailed: "__NOTEBOOK__",
+      summary: "__NOTEBOOK__",
+    },
+    summaryGroups: ["unit", "sector", "zone", "section", "month"],
+    source: "notebook",
+  },
+};
+
+const weighmentSummaryGroups = {
+  plant: { label: "Plant", select: "plant AS \"Plant\"", group: "plant", order: "plant" },
+  sector: { label: "Sector", select: "sector AS \"Sector\"", group: "sector", order: "sector" },
+  zone: { label: "Zone", select: "zone AS \"Zone\"", group: "zone", order: "zone" },
+  section: { label: "Section", select: "section AS \"Section\"", group: "section", order: "section" },
+  month: { label: "Month", select: "DATE_TRUNC('month', weighment_date) AS \"Month\"", group: "DATE_TRUNC('month', weighment_date)", order: "DATE_TRUNC('month', weighment_date)" },
 };
 
 function escapedWorkbookPath() {
@@ -192,6 +225,143 @@ function run(connection, sql, values = []) {
   });
 }
 
+// Loads the configured weighment export into normalized row objects.
+async function loadWeighmentRows() {
+  if (!weighmentDataPath) throw createError("Daily weighment data is not configured. Set WEIGHMENT_DATA_PATH on the server.", 503);
+  if (!fs.existsSync(weighmentDataPath)) throw createError("The configured daily weighment data file was not found.", 503);
+  const extension = path.extname(weighmentDataPath).toLowerCase();
+  const workbook = new ExcelJS.Workbook();
+  if (extension === ".xlsx" || extension === ".xls") {
+    await workbook.xlsx.readFile(weighmentDataPath);
+  } else {
+    await workbook.csv.readFile(weighmentDataPath);
+  }
+  const sheet = workbook.worksheets[0];
+  if (!sheet) throw createError("The configured daily weighment data file has no worksheet.", 503);
+  const headers = sheet.getRow(1).values.slice(1).map((value) => String(value || "").trim());
+  return sheetToObjects(sheet, headers).map(normalizeWeighmentRow).filter((row) => row.weighment_date);
+}
+
+// Converts spreadsheet rows into the report’s normalized data shape.
+function sheetToObjects(sheet, headers) {
+  const rows = [];
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+    const values = row.values.slice(1);
+    rows.push(Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""])));
+  });
+  return rows;
+}
+
+// Applies source aliases and numeric/date normalization to one weighment row.
+function normalizeWeighmentRow(row) {
+  const value = (name, aliases = []) => {
+    const key = [name, ...aliases].find((candidate) => Object.prototype.hasOwnProperty.call(row, candidate));
+    return key ? row[key] : "";
+  };
+  const text = (name, aliases = []) => String(value(name, aliases) ?? "").trim();
+  const number = (name, aliases = []) => {
+    const parsed = Number(value(name, aliases));
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+  const rawDate = value("GROSS_DT1", ["Gross_Date", "Date"]);
+  const date = rawDate instanceof Date ? rawDate : new Date(rawDate);
+  return {
+    weighment_date: Number.isNaN(date.getTime()) ? null : date,
+    weigh_no: text("Weigh_No", ["Weigh No."]),
+    permit_no: text("Permit_No", ["Permit No."]),
+    ccs_slip_no: text("CCS_Slip_No", ["CCS Slip No."]),
+    farmer_name: text("Farmer_Name", ["Farmer Name"]),
+    farmer_id: text("Farmer_Id", ["Farmer ID"]),
+    field_number: text("field_number", ["Field_No", "Field No."]),
+    region: text("Region_Name", ["Region"]),
+    plant: text("Plant") || mapPlant(text("Region_Name", ["Region"])),
+    sector: text("Sector_Name", ["Sector"]),
+    zone: text("Zone"),
+    section: text("Section_Name", ["Section"]),
+    sub_location: text("SubLocation", ["Sub-location"]),
+    village: text("Village_Name", ["Village"]),
+    harvester_name: text("Harvester_Name", ["Harvester"]),
+    tractor_trailer: text("Tractor_Trailer", ["Tractor / Trailer"]),
+    driver_name: text("Driver_Name", ["Driver"]),
+    material: text("Material_Desc", ["Material"]),
+    gross_weight: number("Gross_Wt", ["Gross Weight (t)"]),
+    tare_weight: number("Tare_Wt", ["Tare Weight (t)"]),
+    external_matter: number("Ext_Mtr", ["External Matter (t)"]),
+    net_weight: number("Net_Wt", ["Net Weight (t)"]),
+    in_time: text("In_Time", ["In Time"]),
+    out_time: text("Out_Time", ["Out Time"]),
+    sync_status: text("Is_Synch", ["Sync Status"]),
+    iprs_status: text("Iprs_Status", ["IPRS Status"]),
+    business_partner_type: text("BP_Type", ["BP Type"]),
+    loading_station: text("Loading_Station", ["Loading Station"]),
+    weighbridge_type: text("Weighbridge_Type", ["Weighbridge"]),
+    slip_type: text("SlipType", ["Slip Type"]),
+  };
+}
+
+// Maps source regions to the application’s plant names.
+function mapPlant(region) {
+  const normalized = region.toUpperCase();
+  if (["NAITIRI", "MISIKHU", "KITALE"].includes(normalized)) return "WKS-NAITIRI";
+  if (normalized === "BUSIA") return "WKS-OLEPITO";
+  return "WKS-KABRAS";
+}
+
+// Applies report filters and returns the selected weighment rows.
+function filterWeighmentRows(rows, query) {
+  const matches = (value, selected) => !selected || selected === "all" || value.toUpperCase() === selected.toUpperCase();
+  const dateFrom = normalizeFilter(query.dateFrom);
+  const dateTo = normalizeFilter(query.dateTo);
+  return rows.filter((row) => {
+    const date = row.weighment_date.toISOString().slice(0, 10);
+    return matches(row.plant, normalizeFilter(query.plant))
+      && matches(row.region, normalizeFilter(query.region))
+      && matches(row.zone, normalizeFilter(query.zone))
+      && matches(row.section, normalizeFilter(query.section))
+      && (!dateFrom || date >= dateFrom)
+      && (!dateTo || date <= dateTo);
+  });
+}
+
+// Runs the detailed or grouped daily weighment query in memory.
+async function queryWeighmentReport(query) {
+  const variant = query.variant === "summary" ? "summary" : "detailed";
+  const groupKey = query.group || "plant";
+  const group = weighmentSummaryGroups[groupKey] || weighmentSummaryGroups.plant;
+  const rows = filterWeighmentRows(await loadWeighmentRows(), query);
+  if (variant === "detailed") {
+    const detailedRows = rows.sort((a, b) => b.weighment_date - a.weighment_date || b.weigh_no.localeCompare(a.weigh_no)).map((row) => ({
+      Date: row.weighment_date.toISOString(), "Weigh No.": row.weigh_no, "Permit No.": row.permit_no, "CCS Slip No.": row.ccs_slip_no,
+      "Farmer Name": row.farmer_name, "Farmer ID": row.farmer_id, "Field No.": row.field_number, Plant: row.plant, Sector: row.sector,
+      Zone: row.zone, Section: row.section, "Sub-location": row.sub_location, Village: row.village, Harvester: row.harvester_name,
+      "Tractor / Trailer": row.tractor_trailer, Driver: row.driver_name, Material: row.material, "Gross Weight (t)": row.gross_weight,
+      "Tare Weight (t)": row.tare_weight, "External Matter (t)": row.external_matter, "Net Weight (t)": row.net_weight,
+      "In Time": row.in_time, "Out Time": row.out_time, "Sync Status": row.sync_status, "IPRS Status": row.iprs_status,
+      "BP Type": row.business_partner_type, "Loading Station": row.loading_station, Weighbridge: row.weighbridge_type, "Slip Type": row.slip_type,
+    }));
+    return { variant, group: groupKey, groupLabel: group.label, filters: query, columns: columnsFromRows(detailedRows), rows: detailedRows };
+  }
+  const grouped = new Map();
+  rows.forEach((row) => {
+    const key = groupKey === "month"
+      ? row.weighment_date.toISOString().slice(0, 7)
+      : row[groupKey] || "Unspecified";
+    const current = grouped.get(key) || { label: key, rows: [] };
+    current.rows.push(row);
+    grouped.set(key, current);
+  });
+  const summaryRows = [...grouped.values()].sort((a, b) => a.label.localeCompare(b.label)).map(({ label, rows: groupRows }) => ({
+    [group.label]: label,
+    Weighments: groupRows.length,
+    Farmers: new Set(groupRows.map((row) => row.farmer_id).filter(Boolean)).size,
+    Fields: new Set(groupRows.map((row) => row.field_number).filter(Boolean)).size,
+    "CCS Slips": new Set(groupRows.map((row) => row.ccs_slip_no).filter(Boolean)).size,
+    "Net Weight (t)": Number(groupRows.reduce((total, row) => total + row.net_weight, 0).toFixed(3)),
+  }));
+  return { variant, group: groupKey, groupLabel: group.label, filters: query, columns: columnsFromRows(summaryRows), rows: summaryRows };
+}
+
 async function withConnection(callback) {
   if (!fs.existsSync(workbookPath)) throw createError("Customer Care.xlsx was not found.", 500);
   const database = new duckdb.Database(":memory:");
@@ -227,6 +397,7 @@ export function getReportCatalog() {
     name: report.name,
     description: report.description,
     variants: Object.keys(report.variants),
+    summaryGroups: report.summaryGroups || [],
   }));
 }
 
@@ -242,7 +413,9 @@ export async function getReportFilters() {
     plants: Object.keys(locations),
     locations: rows.map((row) => ({
       plant: Object.entries(locations).find(([, regions]) => regions.some((name) => name.toUpperCase() === row.region?.toUpperCase()))?.[0] || "Kabras",
+      unit: Object.entries(locations).find(([, regions]) => regions.some((name) => name.toUpperCase() === row.region?.toUpperCase()))?.[0] || "Kabras",
       region: row.region,
+      sector: row.region,
       zone: row.zone,
       section: row.section,
     })),
@@ -252,6 +425,14 @@ export async function getReportFilters() {
 export async function queryReport(reportId, query = {}) {
   const report = reports[reportId];
   if (!report) throw createError("Report not found.", 404);
+  if (report.source === "notebook") {
+    const result = await queryHarvestingReport({ ...query, reportId });
+    return { id: reportId, name: report.name, description: report.description, variants: Object.keys(report.variants), ...result };
+  }
+  if (report.source === "weighment") {
+    const result = await queryWeighmentReport(query);
+    return { id: reportId, name: report.name, description: report.description, variants: Object.keys(report.variants), ...result };
+  }
   const variant = query.variant === "summary" ? "summary" : "detailed";
   const filterSet = buildFilters(query);
   const sql = report.variants[variant].replace("__BASE__", baseQuery()).replace("__FILTERS__", filterSet.sql);

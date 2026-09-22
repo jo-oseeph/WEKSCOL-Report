@@ -13,6 +13,7 @@ function ReportViewer({ report }) {
   );
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [month, setMonth] = useState("");
   const [locations, setLocations] = useState([]);
   const [result, setResult] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -21,19 +22,23 @@ function ReportViewer({ report }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/reports/filters", { credentials: "include" })
+    const filterSource = ["cane-supply", "daily-weighment"].includes(report.id) ? "?source=harvesting" : "";
+    fetch(`/api/reports/filters${filterSource}`, { credentials: "include" })
       .then((response) => response.json().then((body) => ({ response, body })))
       .then(({ response, body }) => {
         if (!response.ok) throw new Error(body.error || "Unable to load filters.");
         setLocations(body.locations || []);
       })
       .catch((requestError) => setError(requestError.message));
-  }, []);
+  }, [report.id]);
 
   const query = useMemo(() => {
-    const [plant, region, zone, section] = locationSelection;
-    return { plant, region, zone, section, dateFrom, dateTo };
-  }, [locationSelection, dateFrom, dateTo]);
+    const [first, second, zone, section] = locationSelection;
+    if (["cane-supply", "daily-weighment"].includes(report.id)) {
+      return { unit: first, sector: second, zone, section, dateFrom, dateTo, ...(report.id === "cane-supply" && month ? { month } : {}) };
+    }
+    return { plant: first, region: second, zone, section, dateFrom, dateTo };
+  }, [locationSelection, dateFrom, dateTo, month, report.id]);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -42,6 +47,9 @@ function ReportViewer({ report }) {
     });
     return params.toString();
   }, [query]);
+
+  const isHarvesting = ["cane-supply", "daily-weighment"].includes(report.id);
+  const filterLocations = locations;
 
   async function loadReport(variant = "detailed") {
     setIsLoading(true);
@@ -108,7 +116,9 @@ function ReportViewer({ report }) {
           <LocationFilter
             selection={locationSelection}
             onChange={setLocationSelection}
-            locations={locations}
+            locations={filterLocations}
+            labels={isHarvesting ? ["Unit", "Sector", "Zone", "Section"] : undefined}
+            fields={isHarvesting ? ["unit", "sector", "zone", "section"] : undefined}
           />
         </div>
 
@@ -137,6 +147,21 @@ function ReportViewer({ report }) {
           </div>
         </div>
 
+        {report.id === "cane-supply" ? (
+          <div className="report-filter-group">
+            <span className="report-filter-group-label">Monthly Summary</span>
+            <div className="report-filter-field">
+              <label htmlFor="month">Month</label>
+              <input
+                id="month"
+                type="month"
+                value={month}
+                onChange={(event) => setMonth(event.target.value)}
+              />
+            </div>
+          </div>
+        ) : null}
+
         <div className="report-filter-actions">
           <button type="submit" className="report-generate-btn">
             Generate Report
@@ -152,20 +177,24 @@ function ReportViewer({ report }) {
           <div className="report-results-heading">
             <h3 className="report-results-title">{result.name}</h3>
             <div className="report-variant-tabs" role="tablist" aria-label="Report view">
-              {(result.variants || ["detailed"]).map((variant) => (
+              {[{ id: "detailed", label: "Detailed Report" }, { id: "summary", label: "Summary Report" }].map((mode) => {
+                const isActive = activeVariant === mode.id;
+                return (
                 <button
-                  key={variant}
+                  key={mode.id}
                   type="button"
                   role="tab"
-                  aria-selected={activeVariant === variant}
-                  className={`report-variant-tab${activeVariant === variant ? " is-active" : ""}`}
-                  onClick={() => handleVariantChange(variant)}
+                  aria-selected={isActive}
+                  className={`report-variant-tab${isActive ? " is-active" : ""}`}
+                  onClick={() => handleVariantChange(mode.id)}
                   disabled={isLoading}
                 >
-                  {variant === "detailed" ? "Detailed Report" : "Summary Report"}
+                  {mode.label}
                 </button>
-              ))}
+                );
+              })}
             </div>
+            {activeVariant === "summary" ? <span className="report-summary-group-label">Grouped to: {result.groupLabel || "Unit"}</span> : null}
           </div>
           <div className="report-results-toolbar">
             <span className="report-results-count">

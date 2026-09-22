@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
-const projectDirectory = path.join(serverDirectory, "..");
+const projectDirectory = path.join(serverDirectory, "..", "..");
 
 const envFilePath = path.join(projectDirectory, ".env");
 
@@ -20,6 +20,20 @@ const loadConfig = () => {
     databasePath: process.env.DATABASE_PATH
       ? path.resolve(projectDirectory, process.env.DATABASE_PATH)
       : path.join(projectDirectory, "data", "wescol.sqlite"),
+    weighmentDataPath: process.env.WEIGHMENT_DATA_PATH
+      ? path.resolve(projectDirectory, process.env.WEIGHMENT_DATA_PATH)
+      : "",
+    harvestingDatabase: {
+      server: process.env.REPORT_DB_SERVER || "",
+      database: process.env.REPORT_DB_DATABASE || "",
+      user: process.env.REPORT_DB_USER || "",
+      password: process.env.REPORT_DB_PASSWORD || "",
+      driver: process.env.REPORT_DB_DRIVER || "ODBC Driver 17 for SQL Server",
+      encrypt: process.env.REPORT_DB_ENCRYPT !== "false",
+      trustServerCertificate: process.env.REPORT_DB_TRUST_SERVER_CERTIFICATE === "true",
+      connectionTimeout: Number(process.env.REPORT_DB_CONNECTION_TIMEOUT || 120000),
+      requestTimeout: Number(process.env.REPORT_DB_REQUEST_TIMEOUT || 120000),
+    },
     session: {
       cookieName: "wescol_session",
       maxAge: Number(process.env.SESSION_MAX_AGE || 604800000),
