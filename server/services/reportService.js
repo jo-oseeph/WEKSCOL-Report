@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import duckdb from "duckdb";
 import ExcelJS from "exceljs";
-import { queryHarvestingReport } from "./harvestingReportService.js";
+import { queryHarvestingReport } from "../modules/agriculture/harvesting/harvestingReportService.js";
 
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
 const workbookPath = path.resolve(serverDirectory, "../../reports/Customer Care.xlsx");
@@ -389,16 +389,6 @@ function normalizeDatabaseValue(value) {
     );
   }
   return value;
-}
-
-export function getReportCatalog() {
-  return Object.entries(reports).map(([id, report]) => ({
-    id,
-    name: report.name,
-    description: report.description,
-    variants: Object.keys(report.variants),
-    summaryGroups: report.summaryGroups || [],
-  }));
 }
 
 export async function getReportFilters() {

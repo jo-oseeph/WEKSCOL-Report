@@ -4,6 +4,7 @@ import { getDefinition } from "./queryDefinitions.js";
 import { inferSummaryGroup, normalizeFilters, queryParameters } from "./filterUtils.js";
 import { injectDirectFilters, injectMonthlyFilters } from "./sqlFilters.js";
 
+// Normalizes Cane Supply database rows for the report response.
 function normalizeResult(result, variant, group, filters) {
   const columns = result.columns.map((column) => column === "Sector Name" ? "Sector" : column);
   const rows = result.rows.map((row) => Object.fromEntries(Object.entries(row).map(([key, value]) => [key === "Sector Name" ? "Sector" : key, value])));

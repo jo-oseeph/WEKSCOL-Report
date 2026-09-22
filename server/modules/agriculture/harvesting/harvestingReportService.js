@@ -1,14 +1,16 @@
-import { loadCell } from "./reports/harvesting/notebookLoader.js";
-import { executeHarvestingQuery } from "./reports/harvesting/sqlExecutor.js";
-import { queryDailyWeighment } from "./reports/harvesting/dailyWeighmentService.js";
-import { queryCaneSupply } from "./reports/harvesting/caneSupplyService.js";
+import { loadCell } from "./notebookLoader.js";
+import { executeHarvestingQuery } from "./sqlExecutor.js";
+import { queryDailyWeighment } from "./dailyWeighmentService.js";
+import { queryCaneSupply } from "./caneSupplyService.js";
 
+// Routes harvesting report requests to the appropriate report implementation.
 export async function queryHarvestingReport(query = {}) {
   if (query.reportId === "daily-weighment") return queryDailyWeighment(query);
   if (query.reportId === "cane-supply") return queryCaneSupply(query);
   throw Object.assign(new Error("Unsupported harvesting report."), { statusCode: 404 });
 }
 
+// Loads the distinct harvesting locations used by the report filters.
 export async function getHarvestingFilters() {
   const source = await loadCell(6);
   const selectIndex = source.lastIndexOf("\nSELECT");
