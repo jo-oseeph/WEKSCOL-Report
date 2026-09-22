@@ -50,6 +50,30 @@ export const reportCategories = [
         ],
       },
       {
+        id: "harvesting",
+        name: "Harvesting",
+        reports: [
+          {
+            id: "cane-supply",
+            name: "Cane Supply",
+            description: "Cane supply details and summaries by unit, sector, zone, section and month.",
+            parameters: [],
+            variants: ["detailed", "summary"],
+            summaryGroups: ["unit", "sector", "zone", "section", "month"],
+            results: { columns: [], rows: [] },
+          },
+          {
+            id: "daily-weighment",
+            name: "Daily Weighment Report",
+            description: "Daily weighment details and summaries by unit, sector, zone, section and month.",
+            parameters: [],
+            variants: ["detailed", "summary"],
+            summaryGroups: ["unit", "sector", "zone", "section", "month"],
+            results: { columns: [], rows: [] },
+          },
+        ],
+      },
+      {
         id: "farmer-recruitment",
         name: "Farmer Recruitment",
         reports: [
@@ -311,6 +335,15 @@ export const reportCategories = [
               (i) => [`HPT-${6000 + i}`, `FLD-${15000 + i}`, `2025-0${(i % 9) + 1}-1${i}`, `2025-0${(i % 9) + 1}-2${i}`, ["Not Started", "In Progress", "Complete"][i % 3]]
             )
           ),
+          {
+            id: "daily-weighment",
+            name: "Daily Weighment",
+            description: "Daily weighment details with plant, sector, zone, section and monthly summary views.",
+            parameters: [],
+            variants: ["detailed", "summary"],
+            summaryGroups: ["plant", "sector", "zone", "section", "month"],
+            results: { columns: [], rows: [] },
+          },
           makeReport(
             "CCS Tracking",
             "Tracks commercial cane sugar performance across harvested fields.",

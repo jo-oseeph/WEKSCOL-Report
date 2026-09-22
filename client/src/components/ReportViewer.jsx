@@ -31,9 +31,10 @@ function ReportViewer({ report }) {
   }, []);
 
   const query = useMemo(() => {
-    const [plant, region, zone, section] = locationSelection;
-    return { plant, region, zone, section, dateFrom, dateTo };
-  }, [locationSelection, dateFrom, dateTo]);
+    const [first, second, zone, section] = locationSelection;
+    if (["cane-supply", "daily-weighment"].includes(report.id)) return { unit: first, sector: second, zone, section, dateFrom, dateTo };
+    return { plant: first, region: second, zone, section, dateFrom, dateTo };
+  }, [locationSelection, dateFrom, dateTo, report.id]);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -43,12 +44,25 @@ function ReportViewer({ report }) {
     return params.toString();
   }, [query]);
 
-  async function loadReport(variant = "detailed") {
+  const filterLocations = ["cane-supply", "daily-weighment"].includes(report.id)
+    ? locations.map((location) => ({ ...location, plant: location.unit || location.plant, region: location.sector || location.region }))
+    : locations;
+
+  function getAutomaticSummaryGroup() {
+    const [, sector, zone, section] = locationSelection;
+    if (section && section !== "all") return "section";
+    if (zone && zone !== "all") return "zone";
+    if (sector && sector !== "all") return "sector";
+    return "unit";
+  }
+
+  async function loadReport(variant = "detailed", group = getAutomaticSummaryGroup()) {
     setIsLoading(true);
     setError("");
     try {
       const params = new URLSearchParams(queryString);
       params.set("variant", variant);
+      if (variant === "summary") params.set("group", group);
       const response = await fetch(`/api/reports/${report.id}?${params.toString()}`, { credentials: "include" });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Unable to generate report.");
@@ -71,12 +85,13 @@ function ReportViewer({ report }) {
 
   async function handleVariantChange(variant) {
     if (variant === activeVariant || isLoading) return;
-    await loadReport(variant);
+    await loadReport(variant, variant === "summary" ? getAutomaticSummaryGroup() : undefined);
   }
 
   function download(format) {
     const params = new URLSearchParams(queryString);
     params.set("variant", activeVariant);
+    if (activeVariant === "summary") params.set("group", result?.group || getAutomaticSummaryGroup());
     window.location.assign(`/api/reports/${report.id}/export.${format}?${params.toString()}`);
   }
 
@@ -108,7 +123,8 @@ function ReportViewer({ report }) {
           <LocationFilter
             selection={locationSelection}
             onChange={setLocationSelection}
-            locations={locations}
+            locations={filterLocations}
+            labels={["cane-supply", "daily-weighment"].includes(report.id) ? ["Unit", "Sector", "Zone", "Section"] : undefined}
           />
         </div>
 
@@ -152,20 +168,24 @@ function ReportViewer({ report }) {
           <div className="report-results-heading">
             <h3 className="report-results-title">{result.name}</h3>
             <div className="report-variant-tabs" role="tablist" aria-label="Report view">
-              {(result.variants || ["detailed"]).map((variant) => (
+              {[{ id: "detailed", label: "Detailed Report" }, { id: "summary", label: "Summary Report" }].map((mode) => {
+                const isActive = activeVariant === mode.id;
+                return (
                 <button
-                  key={variant}
+                  key={mode.id}
                   type="button"
                   role="tab"
-                  aria-selected={activeVariant === variant}
-                  className={`report-variant-tab${activeVariant === variant ? " is-active" : ""}`}
-                  onClick={() => handleVariantChange(variant)}
+                  aria-selected={isActive}
+                  className={`report-variant-tab${isActive ? " is-active" : ""}`}
+                  onClick={() => handleVariantChange(mode.id)}
                   disabled={isLoading}
                 >
-                  {variant === "detailed" ? "Detailed Report" : "Summary Report"}
+                  {mode.label}
                 </button>
-              ))}
+                );
+              })}
             </div>
+            {activeVariant === "summary" ? <span className="report-summary-group-label">Grouped to: {result.groupLabel || "Unit"}</span> : null}
           </div>
           <div className="report-results-toolbar">
             <span className="report-results-count">

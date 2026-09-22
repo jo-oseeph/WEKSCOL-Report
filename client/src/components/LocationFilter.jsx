@@ -3,7 +3,7 @@ import { LOCATION_LEVELS } from "../data/locationData";
 import "../styles/LocationFilter.css";
 
 // selection is an array of four values (one per level), each "all" by default.
-function LocationFilter({ selection, onChange, locations = [] }) {
+function LocationFilter({ selection, onChange, locations = [], labels = LOCATION_LEVELS }) {
   const optionsFor = (levelIndex, parentId) => {
     if (levelIndex === 0) return [...new Set(locations.map((item) => item.plant))].filter(Boolean).map((name) => ({ id: name, name }));
     const parentField = ["plant", "region", "zone"][levelIndex - 1];
@@ -25,7 +25,7 @@ function LocationFilter({ selection, onChange, locations = [] }) {
 
   return (
     <div className="location-filter">
-      {LOCATION_LEVELS.map((levelLabel, levelIndex) => {
+      {labels.map((levelLabel, levelIndex) => {
         const parentId = levelIndex === 0 ? null : selection[levelIndex - 1];
         const options = optionsFor(levelIndex, parentId);
         const disabled = levelIndex > 0 && (!parentId || parentId === "all");
