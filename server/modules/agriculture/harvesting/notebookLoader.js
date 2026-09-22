@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const serviceDirectory = path.dirname(fileURLToPath(import.meta.url));
 const notebookPath = path.resolve(serviceDirectory, "../../../../reports/reports.ipynb");
 
+// Creates a standardized notebook-loading error with an HTTP status code.
 function createError(message, statusCode = 500) {
   return Object.assign(new Error(message), { statusCode });
 }

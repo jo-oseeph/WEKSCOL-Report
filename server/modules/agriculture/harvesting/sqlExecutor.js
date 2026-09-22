@@ -3,6 +3,7 @@ import loadConfig from "../../../config/env.js";
 
 const config = loadConfig();
 
+// Builds the SQL Server connection configuration for harvesting reports.
 function databaseConfig() {
   const database = config.harvestingDatabase;
   if (!database.server || !database.database || !database.user || !database.password) {
@@ -22,6 +23,7 @@ function databaseConfig() {
   };
 }
 
+// Converts SQL Server values into JSON-safe response values.
 function normalizeValue(value) {
   if (typeof value === "bigint") return Number(value);
   if (value instanceof Date) return value.toISOString();

@@ -4,6 +4,7 @@ import { getDefinition } from "./queryDefinitions.js";
 import { inferSummaryGroup, normalizeFilters, queryParameters } from "./filterUtils.js";
 import { injectDirectFilters } from "./sqlFilters.js";
 
+// Normalizes Daily Weighment database rows for the report response.
 function normalizeResult(result, variant, group, filters) {
   const columns = result.columns.map((column) => ({ Region_Name: "Unit", Sector_Name: "Sector", "Sector Name": "Sector" }[column] || column));
   const rows = result.rows.map((row) => {

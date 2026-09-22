@@ -7,6 +7,7 @@ import createUserRepository from "./db/userRepository.js";
 import createPasswordResetTokenRepository from "./db/passwordResetTokenRepository.js";
 import createSessionRepository from "./db/sessionRepository.js";
 import createAuthController from "./controllers/authController.js";
+import createReportController from "./controllers/reportController.js";
 import createAuthRoutes from "./routes/authRoutes.js";
 import createAuthService from "./services/authService.js";
 import createSessionService from "./services/sessionService.js";
@@ -57,6 +58,8 @@ const verifyEmailConnection = () => {
   });
 };
 
+const reportController = createReportController();
+
 const authController = createAuthController({
   authService,
   sessionService,
@@ -70,7 +73,7 @@ app.use("/api/auth", createAuthRoutes(authController));
 app.use(
   "/api/reports",
   requireAuth({ sessionService, cookieName: config.session.cookieName }),
-  createReportRoutes(),
+  createReportRoutes(reportController),
 );
 app.use(notFound);
 app.use(errorHandler);
