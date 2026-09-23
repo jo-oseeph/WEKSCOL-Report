@@ -91,7 +91,14 @@ export async function executeHarvestingQuery(queryText, parameters = {}) {
   try {
     const pool = await getPool();
     const request = pool.request();
+    // Skip binding any parameter the query text already declares itself
+    // (e.g. "DECLARE @NextMonth DATE = ..."). Some of the notebook-derived
+    // pivot queries (cane supply's monthly "Daily Detailed" reports)
+    // declare their own local "@NextMonth" variable internally; binding it
+    // again as an external mssql parameter collides with that DECLARE and
+    // causes a "variable name has already been declared" SQL Server error.
     Object.entries(parameters).forEach(([name, value]) => {
+      if (new RegExp(`DECLARE\\s+@${name}\\b`, "i").test(queryText)) return;
       if (name.toLowerCase().includes("date") || name.toLowerCase().includes("month")) {
         request.input(name, sql.Date, value || null);
       } else {

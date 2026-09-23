@@ -12,9 +12,7 @@ export async function queryHarvestingReport(query = {}) {
 
 // The unit/sector/zone/section hierarchy changes rarely, so the filter list
 // is cached in-memory for a short period. This avoids re-running a heavy,
-// multi-table aggregation query against the remote SQL Server every time a
-// user opens a harvesting report (previously every load took several
-// seconds to tens of seconds).
+
 const FILTERS_CACHE_TTL_MS = 15 * 60 * 1000;
 let filtersCache = null;
 let filtersCacheExpiresAt = 0;
