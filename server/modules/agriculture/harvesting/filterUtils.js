@@ -24,8 +24,13 @@ export function normalizeFilters(query = {}) {
   return filters;
 }
 
+// Infers the location depth (unit/sector/zone/section) to group or pivot by,
+// based on which location filters are selected. Month is a separate,
+// orthogonal dimension (it controls the date window / pivot columns, not the
+// location depth) and must not be conflated with the group here, otherwise
+// a unit-level month view would incorrectly resolve to a "month" group and
+// lose the ability to distinguish unit-only from sector-level results.
 export function inferSummaryGroup(filters) {
-  if (filters.month) return "month";
   if (filters.section) return "section";
   if (filters.zone) return "zone";
   if (filters.sector) return "sector";
