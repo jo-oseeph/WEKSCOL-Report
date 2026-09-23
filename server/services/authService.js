@@ -83,21 +83,21 @@ const createAuthService = ({
     async register(details) {
       const input = validateRegistration(details);
       if (
-        userRepository.findByEmail(input.email) ||
-        userRepository.findByIdNumber(input.idNumber)
+        await userRepository.findByEmail(input.email) ||
+        await userRepository.findByIdNumber(input.idNumber)
       ) {
         throw createServiceError("That email or ID number is already registered.", 409);
       }
 
       try {
-        const user = userRepository.create({
+        const user = await userRepository.create({
           ...input,
           avatarUrl: input.avatarUrl,
           passwordHash: await passwordSecurity.hashPassword(input.password),
         });
         return toUser(user);
       } catch (error) {
-        if (error?.code === "SQLITE_CONSTRAINT_UNIQUE") {
+        if (error?.code === "23505") {
           throw createServiceError("That email or ID number is already registered.", 409);
         }
         throw error;
@@ -105,7 +105,7 @@ const createAuthService = ({
     },
     async login(credentials) {
       const { email, password } = validateLogin(credentials);
-      const user = userRepository.findByEmail(email);
+      const user = await userRepository.findByEmail(email);
       if (
         !user ||
         !(await passwordSecurity.comparePassword(password, user.password_hash))
@@ -114,7 +114,7 @@ const createAuthService = ({
       }
       return {
         user: toUser(user),
-        token: sessionService.createSession(user.id),
+        token: await sessionService.createSession(user.id),
       };
     },
     async updateProfile(userId, details) {
@@ -123,22 +123,22 @@ const createAuthService = ({
         throw createServiceError("Use a password with at least 6 characters.", 400);
       }
 
-      const emailOwner = userRepository.findByEmail(input.email);
-      const idOwner = userRepository.findByIdNumber(input.idNumber);
+      const emailOwner = await userRepository.findByEmail(input.email);
+      const idOwner = await userRepository.findByIdNumber(input.idNumber);
       if ((emailOwner && emailOwner.id !== userId) || (idOwner && idOwner.id !== userId)) {
         throw createServiceError("That email or ID number is already in use.", 409);
       }
 
       try {
-        const user = userRepository.updateProfile({ ...input, id: userId });
+        const user = await userRepository.updateProfile({ ...input, id: userId });
         if (input.password) {
           await passwordSecurity.hashPassword(input.password).then((hash) =>
             userRepository.updatePassword(userId, hash),
           );
         }
-        return toUser(userRepository.findById(user.id));
+        return toUser(await userRepository.findById(user.id));
       } catch (error) {
-        if (error?.code === "SQLITE_CONSTRAINT_UNIQUE") {
+        if (error?.code === "23505") {
           throw createServiceError("That email or ID number is already in use.", 409);
         }
         throw error;
@@ -148,7 +148,7 @@ const createAuthService = ({
       const currentPassword = typeof details.currentPassword === "string" ? details.currentPassword : "";
       const newPassword = typeof details.newPassword === "string" ? details.newPassword : "";
       const confirmPassword = typeof details.confirmPassword === "string" ? details.confirmPassword : "";
-      const user = userRepository.findById(userId);
+      const user = await userRepository.findById(userId);
 
       if (!user || !currentPassword || !newPassword || newPassword.length < 6) {
         throw createServiceError("Use a new password with at least 6 characters.", 400);
@@ -160,7 +160,7 @@ const createAuthService = ({
         throw createServiceError("The current password is incorrect.", 400);
       }
 
-      userRepository.updatePassword(
+      await userRepository.updatePassword(
         userId,
         await passwordSecurity.hashPassword(newPassword),
       );
@@ -170,14 +170,14 @@ const createAuthService = ({
         typeof details.email === "string" ? details.email.trim().toLowerCase() : "";
       if (!emailPattern.test(email)) return;
 
-      passwordResetTokenRepository.deleteExpired(Date.now());
-      const user = userRepository.findByEmail(email);
+      await passwordResetTokenRepository.deleteExpired(Date.now());
+      const user = await userRepository.findByEmail(email);
       if (!user) return;
 
       const token = passwordSecurity.createResetToken();
       const now = Date.now();
-      passwordResetTokenRepository.deleteForUser(user.id);
-      passwordResetTokenRepository.create({
+      await passwordResetTokenRepository.deleteForUser(user.id);
+      await passwordResetTokenRepository.create({
         tokenHash: passwordSecurity.hashToken(token),
         userId: user.id,
         expiresAt: now + passwordResetTokenLifetime,
@@ -188,7 +188,7 @@ const createAuthService = ({
         const resetUrl = `${clientUrl.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
         await emailService.sendPasswordReset({ to: user.email, resetUrl });
       } catch (error) {
-        passwordResetTokenRepository.deleteForUser(user.id);
+        await passwordResetTokenRepository.deleteForUser(user.id);
         console.error("Unable to send password reset email:", {
           code: error?.code,
           responseCode: error?.responseCode,
@@ -208,8 +208,8 @@ const createAuthService = ({
         throw createServiceError("Passwords do not match.", 400);
       }
 
-      passwordResetTokenRepository.deleteExpired(Date.now());
-      const resetToken = passwordResetTokenRepository.consume(
+      await passwordResetTokenRepository.deleteExpired(Date.now());
+      const resetToken = await passwordResetTokenRepository.consume(
         passwordSecurity.hashToken(token),
         Date.now(),
       );
@@ -217,11 +217,11 @@ const createAuthService = ({
         throw createServiceError("This password reset link is invalid or has expired.", 400);
       }
 
-      userRepository.updatePassword(
+      await userRepository.updatePassword(
         resetToken.user_id,
         await passwordSecurity.hashPassword(newPassword),
       );
-      sessionService.deleteUserSessions(resetToken.user_id);
+      await sessionService.deleteUserSessions(resetToken.user_id);
     },
   };
 };

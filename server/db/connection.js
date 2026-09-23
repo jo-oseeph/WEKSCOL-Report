@@ -1,14 +1,15 @@
-import fs from "node:fs";
-import path from "node:path";
-import Database from "better-sqlite3";
+import { Pool } from "@neondatabase/serverless";
 
-const createDatabase = (databasePath) => {
-  fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+const createDatabase = (connectionString) => {
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is required to connect to Neon Postgres.");
+  }
 
-  const db = new Database(databasePath);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
-  return db;
+  const pool = new Pool({ connectionString });
+  pool.on("error", (error) => {
+    console.error("Neon database pool error:", error);
+  });
+  return pool;
 };
 
 export default createDatabase;

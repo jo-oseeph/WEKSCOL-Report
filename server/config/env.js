@@ -24,6 +24,8 @@ const loadConfig = () => {
   return {
     nodeEnvironment,
     port: Number(process.env.PORT || 3001),
+    databaseUrl: process.env.DATABASE_URL || "",
+    databaseUrlUnpooled: process.env.DATABASE_URL_UNPOOLED || "",
     databasePath: process.env.DATABASE_PATH
       ? path.resolve(projectDirectory, process.env.DATABASE_PATH)
       : path.join(projectDirectory, "data", "wescol.sqlite"),
