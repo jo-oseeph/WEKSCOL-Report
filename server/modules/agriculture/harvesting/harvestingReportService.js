@@ -10,8 +10,17 @@ export async function queryHarvestingReport(query = {}) {
   throw Object.assign(new Error("Unsupported harvesting report."), { statusCode: 404 });
 }
 
-// Loads the distinct harvesting locations used by the report filters.
-export async function getHarvestingFilters() {
+// The unit/sector/zone/section hierarchy changes rarely, so the filter list
+// is cached in-memory for a short period. This avoids re-running a heavy,
+// multi-table aggregation query against the remote SQL Server every time a
+// user opens a harvesting report (previously every load took several
+// seconds to tens of seconds).
+const FILTERS_CACHE_TTL_MS = 15 * 60 * 1000;
+let filtersCache = null;
+let filtersCacheExpiresAt = 0;
+let filtersCacheInFlight = null;
+
+async function loadHarvestingFilters() {
   const source = await loadCell(6);
   const selectIndex = source.lastIndexOf("\nSELECT");
   if (selectIndex < 0) {
@@ -38,4 +47,35 @@ ORDER BY Unit, Sector, Zone, Section`;
     units: [...new Set(locations.map((location) => location.unit).filter(Boolean))],
     locations,
   };
+}
+
+// Loads the distinct harvesting locations used by the report filters,
+// serving a cached copy when available and coalescing concurrent requests
+// into a single upstream query.
+export async function getHarvestingFilters({ forceRefresh = false } = {}) {
+  const now = Date.now();
+  if (!forceRefresh && filtersCache && now < filtersCacheExpiresAt) {
+    return filtersCache;
+  }
+
+  if (!filtersCacheInFlight) {
+    filtersCacheInFlight = loadHarvestingFilters()
+      .then((filters) => {
+        filtersCache = filters;
+        filtersCacheExpiresAt = Date.now() + FILTERS_CACHE_TTL_MS;
+        return filters;
+      })
+      .finally(() => {
+        filtersCacheInFlight = null;
+      });
+  }
+
+  try {
+    return await filtersCacheInFlight;
+  } catch (error) {
+    // Fall back to a stale cached copy rather than failing the whole page
+    // if a refresh attempt fails but we have older data to show.
+    if (filtersCache) return filtersCache;
+    throw error;
+  }
 }
