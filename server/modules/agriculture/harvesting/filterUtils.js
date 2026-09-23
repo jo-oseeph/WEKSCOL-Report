@@ -1,5 +1,12 @@
 const values = ["unit", "sector", "zone", "section", "dateFrom", "dateTo", "month"];
 
+// The underlying notebook SQL scans from 2025-01-01 through "tomorrow" when
+// no date filter is supplied, which forces a full-history aggregation on
+// every unfiltered report load (observed taking 10-40+ seconds). When the
+// caller hasn't picked a date range or month, default to a recent rolling
+// window so first loads stay fast; users can still widen the range manually.
+const DEFAULT_LOOKBACK_DAYS = 180;
+
 export function normalizeValue(value) {
   return typeof value === "string" && value.trim() && value !== "all" ? value.trim() : null;
 }
@@ -8,6 +15,11 @@ export function normalizeFilters(query = {}) {
   const filters = Object.fromEntries(values.map((key) => [key, normalizeValue(query[key])]));
   if (filters.dateFrom && filters.dateTo && filters.dateFrom > filters.dateTo) {
     throw Object.assign(new Error("Date From cannot be after Date To."), { statusCode: 400 });
+  }
+  if (!filters.dateFrom && !filters.dateTo && !filters.month) {
+    const defaultFrom = new Date();
+    defaultFrom.setUTCDate(defaultFrom.getUTCDate() - DEFAULT_LOOKBACK_DAYS);
+    filters.dateFrom = defaultFrom.toISOString().slice(0, 10);
   }
   return filters;
 }

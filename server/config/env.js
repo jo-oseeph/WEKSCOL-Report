@@ -2,7 +2,14 @@ import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
+// env.js lives at server/config/, so the project root (where .env, data/ and
+// reports/ live) is two directories up, not one. The previous single ".."
+// resolved to server/ instead of the repo root, which silently prevented
+// the root .env file (including REPORT_DB_* credentials) from ever loading
+// and caused every harvesting report request to fail with a 503
+// "credentials are not configured" error.
+const configDirectory = path.dirname(fileURLToPath(import.meta.url));
+const serverDirectory = path.join(configDirectory, "..");
 const projectDirectory = path.join(serverDirectory, "..");
 
 const envFilePath = path.join(projectDirectory, ".env");
