@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import morgan from "morgan";
 import loadConfig from "./config/env.js";
 import createDatabase from "./db/connection.js";
@@ -75,6 +76,20 @@ const startServer = async () => {
   const reportController = createReportController();
 
   const app = express();
+
+  // The frontend (Vercel) and backend (Render) are deployed on different
+  // origins in production, so the browser requires an explicit CORS grant.
+  // "credentials: true" is required so the session cookie is sent/accepted
+  // cross-origin; this must be paired with SameSite=None on the cookie
+  // itself (see utils/cookies.js) and a specific (non-wildcard) origin,
+  // since browsers reject "Access-Control-Allow-Origin: *" alongside
+  // credentialed requests.
+  app.use(
+    cors({
+      origin: config.clientUrl,
+      credentials: true,
+    }),
+  );
 
   app.use(express.json({ limit: "32kb" }));
   app.use(morgan("dev"));

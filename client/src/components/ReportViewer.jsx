@@ -2,7 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import LocationFilter, {
   createDefaultLocationSelection,
 } from "./LocationFilter.jsx";
+import httpClient from "../api/httpClient.js";
 import "../styles/ReportViewer.css";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 const RESULTS_PER_PAGE = 50;
 
@@ -21,14 +24,11 @@ function ReportViewer({ report }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const filterSource = ["cane-supply", "daily-weighment"].includes(report.id) ? "?source=harvesting" : "";
-    fetch(`/api/reports/filters${filterSource}`, { credentials: "include" })
-      .then((response) => response.json().then((body) => ({ response, body })))
-      .then(({ response, body }) => {
-        if (!response.ok) throw new Error(body.error || "Unable to load filters.");
-        setLocations(body.locations || []);
-      })
-      .catch((requestError) => setError(requestError.message));
+    const params = ["cane-supply", "daily-weighment"].includes(report.id) ? { source: "harvesting" } : undefined;
+    httpClient
+      .get("/reports/filters", { params })
+      .then((response) => setLocations(response.data.locations || []))
+      .catch((requestError) => setError(requestError.response?.data?.error || "Unable to load filters."));
   }, [report.id]);
 
   const query = useMemo(() => {
@@ -56,15 +56,13 @@ function ReportViewer({ report }) {
     try {
       const params = new URLSearchParams(queryString);
       params.set("variant", variant);
-      const response = await fetch(`/api/reports/${report.id}?${params.toString()}`, { credentials: "include" });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "Unable to generate report.");
-      setResult(body);
-      setActiveVariant(body.variant || variant);
+      const response = await httpClient.get(`/reports/${report.id}`, { params });
+      setResult(response.data);
+      setActiveVariant(response.data.variant || variant);
       setCurrentPage(1);
       setShowResults(true);
     } catch (requestError) {
-      setError(requestError.message);
+      setError(requestError.response?.data?.error || "Unable to generate report.");
       setShowResults(false);
     } finally {
       setIsLoading(false);
@@ -84,7 +82,11 @@ function ReportViewer({ report }) {
   function download(format) {
     const params = new URLSearchParams(queryString);
     params.set("variant", activeVariant);
-    window.location.assign(`/api/reports/${report.id}/export.${format}?${params.toString()}`);
+    // File downloads are a full browser navigation (not an XHR/axios call),
+    // so they must use an absolute URL to the backend in production, since a
+    // relative "/api/..." URL would resolve against the frontend's own
+    // origin (Vercel) instead of the backend (Render).
+    window.location.assign(`${API_BASE_URL}/api/reports/${report.id}/export.${format}?${params.toString()}`);
   }
 
   const totalPages = result ? Math.max(1, Math.ceil(result.rows.length / RESULTS_PER_PAGE)) : 1;

@@ -23,9 +23,15 @@ const setSessionCookie = (
   { maxAge, secure },
 ) => {
   const securePart = secure ? "; Secure" : "";
+  // Cross-site cookies (frontend on Vercel, backend on Render -- different
+  // registrable domains) require SameSite=None, and browsers only honor
+  // SameSite=None when the cookie is also Secure. In local development the
+  // frontend/backend share "localhost" so SameSite=Lax (which does not
+  // require HTTPS) keeps working over plain HTTP.
+  const sameSite = secure ? "None" : "Lax";
   response.setHeader(
     "Set-Cookie",
-    `${cookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(maxAge / 1000)}${securePart}`,
+    `${cookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${Math.floor(maxAge / 1000)}${securePart}`,
   );
 };
 
