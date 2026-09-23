@@ -1,23 +1,28 @@
 const createPasswordResetTokenRepository = (db) => {
-  const deleteForUserStatement = db.prepare(
-    "DELETE FROM password_reset_tokens WHERE user_id = ?",
-  );
-  const insertStatement = db.prepare(
-    "INSERT INTO password_reset_tokens (token_hash, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)",
-  );
-  const consumeStatement = db.prepare(
-    "DELETE FROM password_reset_tokens WHERE token_hash = ? AND expires_at > ? RETURNING user_id",
-  );
-  const deleteExpiredStatement = db.prepare(
-    "DELETE FROM password_reset_tokens WHERE expires_at <= ?",
-  );
-
   return {
-    deleteForUser: (userId) => deleteForUserStatement.run(userId),
-    create: ({ tokenHash, userId, expiresAt, createdAt }) =>
-      insertStatement.run(tokenHash, userId, expiresAt, createdAt),
-    consume: (tokenHash, now) => consumeStatement.get(tokenHash, now),
-    deleteExpired: (now) => deleteExpiredStatement.run(now),
+    deleteForUser: async (userId) => {
+      await db.query("DELETE FROM password_reset_tokens WHERE user_id = $1", [userId]);
+    },
+    create: async ({ tokenHash, userId, expiresAt, createdAt }) => {
+      await db.query(
+        `INSERT INTO password_reset_tokens
+          (token_hash, user_id, expires_at, created_at)
+         VALUES ($1, $2, $3, $4)`,
+        [tokenHash, userId, expiresAt, createdAt],
+      );
+    },
+    consume: async (tokenHash, now) => {
+      const result = await db.query(
+        `DELETE FROM password_reset_tokens
+         WHERE token_hash = $1 AND expires_at > $2
+         RETURNING user_id`,
+        [tokenHash, now],
+      );
+      return result.rows[0];
+    },
+    deleteExpired: async (now) => {
+      await db.query("DELETE FROM password_reset_tokens WHERE expires_at <= $1", [now]);
+    },
   };
 };
 

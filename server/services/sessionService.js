@@ -3,25 +3,25 @@ import security from "../utils/security.js";
 const { createSessionToken, hashToken } = security;
 
 const createSessionService = ({ sessionRepository, userRepository, sessionConfig }) => {
-  function removeExpiredSessions() {
-    sessionRepository.deleteExpired(Date.now());
+  async function removeExpiredSessions() {
+    await sessionRepository.deleteExpired(Date.now());
   }
 
   return {
-    createSession(userId) {
-      removeExpiredSessions();
+    async createSession(userId) {
+      await removeExpiredSessions();
       const token = createSessionToken();
-      sessionRepository.create({
+      await sessionRepository.create({
         tokenHash: hashToken(token),
         userId,
         expiresAt: Date.now() + sessionConfig.maxAge,
       });
       return token;
     },
-    getUserFromToken(token) {
+    async getUserFromToken(token) {
       if (!token) return null;
-      const session = sessionRepository.findValid(hashToken(token), Date.now());
-      const user = session ? userRepository.findById(session.user_id) : null;
+      const session = await sessionRepository.findValid(hashToken(token), Date.now());
+      const user = session ? await userRepository.findById(session.user_id) : null;
       return user
         ? {
             id: user.id,
@@ -33,16 +33,16 @@ const createSessionService = ({ sessionRepository, userRepository, sessionConfig
           }
         : null;
     },
-    getUserIdFromToken(token) {
+    async getUserIdFromToken(token) {
       if (!token) return null;
-      const session = sessionRepository.findValid(hashToken(token), Date.now());
+      const session = await sessionRepository.findValid(hashToken(token), Date.now());
       return session?.user_id || null;
     },
-    deleteSession(token) {
-      if (token) sessionRepository.delete(hashToken(token));
+    async deleteSession(token) {
+      if (token) await sessionRepository.delete(hashToken(token));
     },
-    deleteUserSessions(userId) {
-      sessionRepository.deleteForUser(userId);
+    async deleteUserSessions(userId) {
+      await sessionRepository.deleteForUser(userId);
     },
     removeExpiredSessions,
   };

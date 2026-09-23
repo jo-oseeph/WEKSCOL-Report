@@ -2,20 +2,25 @@ import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
-// env.js lives at server/config/, so the project root (where .env, data/ and
-// reports/ live) is two directories up, not one. The previous single ".."
-// resolved to server/ instead of the repo root, which silently prevented
-// the root .env file (including REPORT_DB_* credentials) from ever loading
-// and caused every harvesting report request to fail with a 503
-// "credentials are not configured" error.
+// env.js lives at server/config/. Support both the repository-root .env and
+// the server/.env location documented by the setup instructions. Loading the
+// root file first preserves the existing project-level configuration, while
+// the server file provides a fallback when the root .env does not exist.
 const configDirectory = path.dirname(fileURLToPath(import.meta.url));
 const serverDirectory = path.join(configDirectory, "..");
 const projectDirectory = path.join(serverDirectory, "..");
 
-const envFilePath = path.join(projectDirectory, ".env");
+const envFilePaths = [
+  path.join(projectDirectory, ".env"),
+  path.join(serverDirectory, ".env"),
+];
 
-if (typeof process.loadEnvFile === "function" && fs.existsSync(envFilePath)) {
-  process.loadEnvFile(envFilePath);
+if (typeof process.loadEnvFile === "function") {
+  for (const envFilePath of envFilePaths) {
+    if (fs.existsSync(envFilePath)) {
+      process.loadEnvFile(envFilePath);
+    }
+  }
 }
 
 const loadConfig = () => {
@@ -24,6 +29,8 @@ const loadConfig = () => {
   return {
     nodeEnvironment,
     port: Number(process.env.PORT || 3001),
+    databaseUrl: process.env.DATABASE_URL || "",
+    databaseUrlUnpooled: process.env.DATABASE_URL_UNPOOLED || "",
     databasePath: process.env.DATABASE_PATH
       ? path.resolve(projectDirectory, process.env.DATABASE_PATH)
       : path.join(projectDirectory, "data", "wescol.sqlite"),

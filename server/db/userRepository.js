@@ -1,49 +1,52 @@
 const createUserRepository = (db) => {
-  const findByIdStatement = db.prepare("SELECT * FROM users WHERE id = ?");
-  const findByEmailStatement = db.prepare(
-    "SELECT * FROM users WHERE email = ? COLLATE NOCASE",
-  );
-  const findByIdNumberStatement = db.prepare(
-    "SELECT * FROM users WHERE id_number = ?",
-  );
-  const insertUserStatement = db.prepare(
-    "INSERT INTO users (first_name, last_name, email, id_number, avatar_url, password_hash) VALUES (?, ?, ?, ?, ?, ?)",
-  );
-  const updateProfileStatement = db.prepare(
-    "UPDATE users SET first_name = ?, last_name = ?, email = ?, id_number = ?, avatar_url = ? WHERE id = ?",
-  );
-  const updatePasswordStatement = db.prepare(
-    "UPDATE users SET password_hash = ? WHERE id = ?",
-  );
+  const findById = async (id) => {
+    const result = await db.query("SELECT * FROM users WHERE id = $1", [id]);
+    return result.rows[0];
+  };
+
+  const findByEmail = async (email) => {
+    const result = await db.query(
+      "SELECT * FROM users WHERE LOWER(email) = LOWER($1)",
+      [email],
+    );
+    return result.rows[0];
+  };
+
+  const findByIdNumber = async (idNumber) => {
+    const result = await db.query("SELECT * FROM users WHERE id_number = $1", [idNumber]);
+    return result.rows[0];
+  };
 
   return {
-    findById: (id) => findByIdStatement.get(id),
-    findByEmail: (email) => findByEmailStatement.get(email),
-    findByIdNumber: (idNumber) => findByIdNumberStatement.get(idNumber),
-    create({ firstName, lastName, email, idNumber, avatarUrl, passwordHash }) {
-      const result = insertUserStatement.run(
-        firstName,
-        lastName,
-        email,
-        idNumber,
-        avatarUrl || null,
+    findById,
+    findByEmail,
+    findByIdNumber,
+    async create({ firstName, lastName, email, idNumber, avatarUrl, passwordHash }) {
+      const result = await db.query(
+        `INSERT INTO users
+          (first_name, last_name, email, id_number, avatar_url, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [firstName, lastName, email, idNumber, avatarUrl || null, passwordHash],
+      );
+      return result.rows[0];
+    },
+    async updateProfile({ id, firstName, lastName, email, idNumber, avatarUrl }) {
+      const result = await db.query(
+        `UPDATE users
+         SET first_name = $1, last_name = $2, email = $3,
+             id_number = $4, avatar_url = $5
+         WHERE id = $6
+         RETURNING *`,
+        [firstName, lastName, email, idNumber, avatarUrl || null, id],
+      );
+      return result.rows[0];
+    },
+    async updatePassword(id, passwordHash) {
+      await db.query("UPDATE users SET password_hash = $1 WHERE id = $2", [
         passwordHash,
-      );
-      return findByIdStatement.get(result.lastInsertRowid);
-    },
-    updateProfile({ id, firstName, lastName, email, idNumber, avatarUrl }) {
-      updateProfileStatement.run(
-        firstName,
-        lastName,
-        email,
-        idNumber,
-        avatarUrl || null,
         id,
-      );
-      return findByIdStatement.get(id);
-    },
-    updatePassword(id, passwordHash) {
-      updatePasswordStatement.run(passwordHash, id);
+      ]);
     },
   };
 };
