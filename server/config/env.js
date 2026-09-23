@@ -63,7 +63,21 @@ const loadConfig = () => {
       from: process.env.SMTP_FROM || process.env.SMTP_USER || "",
       fromName: process.env.SMTP_FROM_NAME || "WESCOL Reports",
     },
-    clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
+    // CLIENT_URL may list multiple allowed frontend origins as a comma
+    // separated string (e.g. local dev + the deployed Vercel URL).
+    // clientUrls is the full parsed list, used for CORS origin checks.
+    // clientUrl is a single URL used to build links (e.g. password reset
+    // emails); it prefers a non-localhost entry so links generated in
+    // production point at the real deployed frontend even if a local dev
+    // URL is also present in the list.
+    ...(() => {
+      const clientUrls = (process.env.CLIENT_URL || "http://localhost:5173")
+        .split(",")
+        .map((url) => url.trim())
+        .filter(Boolean);
+      const clientUrl = clientUrls.find((url) => !url.includes("localhost")) || clientUrls[0];
+      return { clientUrl, clientUrls };
+    })(),
   };
 };
 

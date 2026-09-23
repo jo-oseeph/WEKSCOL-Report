@@ -2,10 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import LocationFilter, {
   createDefaultLocationSelection,
 } from "./LocationFilter.jsx";
-import httpClient from "../api/httpClient.js";
+import { reports as reportsApi } from "../api/api.js";
 import "../styles/ReportViewer.css";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 const RESULTS_PER_PAGE = 50;
 
@@ -25,10 +23,10 @@ function ReportViewer({ report }) {
 
   useEffect(() => {
     const params = ["cane-supply", "daily-weighment"].includes(report.id) ? { source: "harvesting" } : undefined;
-    httpClient
-      .get("/reports/filters", { params })
-      .then((response) => setLocations(response.data.locations || []))
-      .catch((requestError) => setError(requestError.response?.data?.error || "Unable to load filters."));
+    reportsApi
+      .getFilters(params)
+      .then((data) => setLocations(data.locations || []))
+      .catch((requestError) => setError(requestError.message));
   }, [report.id]);
 
   const query = useMemo(() => {
@@ -39,12 +37,13 @@ function ReportViewer({ report }) {
     return { plant: first, region: second, zone, section, dateFrom, dateTo };
   }, [locationSelection, dateFrom, dateTo, report.id]);
 
-  const queryString = useMemo(() => {
-    const params = new URLSearchParams();
+  // Strips "all"/empty values so they are not sent to the backend as filters.
+  const cleanParams = useMemo(() => {
+    const params = {};
     Object.entries(query).forEach(([key, value]) => {
-      if (value && value !== "all") params.set(key, value);
+      if (value && value !== "all") params[key] = value;
     });
-    return params.toString();
+    return params;
   }, [query]);
 
   const isHarvesting = ["cane-supply", "daily-weighment"].includes(report.id);
@@ -54,15 +53,13 @@ function ReportViewer({ report }) {
     setIsLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams(queryString);
-      params.set("variant", variant);
-      const response = await httpClient.get(`/reports/${report.id}`, { params });
-      setResult(response.data);
-      setActiveVariant(response.data.variant || variant);
+      const data = await reportsApi.run(report.id, { ...cleanParams, variant });
+      setResult(data);
+      setActiveVariant(data.variant || variant);
       setCurrentPage(1);
       setShowResults(true);
     } catch (requestError) {
-      setError(requestError.response?.data?.error || "Unable to generate report.");
+      setError(requestError.message);
       setShowResults(false);
     } finally {
       setIsLoading(false);
@@ -80,13 +77,7 @@ function ReportViewer({ report }) {
   }
 
   function download(format) {
-    const params = new URLSearchParams(queryString);
-    params.set("variant", activeVariant);
-    // File downloads are a full browser navigation (not an XHR/axios call),
-    // so they must use an absolute URL to the backend in production, since a
-    // relative "/api/..." URL would resolve against the frontend's own
-    // origin (Vercel) instead of the backend (Render).
-    window.location.assign(`${API_BASE_URL}/api/reports/${report.id}/export.${format}?${params.toString()}`);
+    window.location.assign(reportsApi.getExportUrl(report.id, format, { ...cleanParams, variant: activeVariant }));
   }
 
   const totalPages = result ? Math.max(1, Math.ceil(result.rows.length / RESULTS_PER_PAGE)) : 1;

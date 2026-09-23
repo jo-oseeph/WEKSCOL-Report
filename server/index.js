@@ -83,16 +83,30 @@ const startServer = async () => {
   // cross-origin; this must be paired with SameSite=None on the cookie
   // itself (see utils/cookies.js) and a specific (non-wildcard) origin,
   // since browsers reject "Access-Control-Allow-Origin: *" alongside
-  // credentialed requests.
+  // credentialed requests. CLIENT_URL may list several allowed origins
+  // (comma-separated, e.g. local dev + the deployed Vercel URL), so the
+  // origin is checked dynamically against that list instead of a single
+  // fixed string.
   app.use(
     cors({
-      origin: config.clientUrl,
+      origin(origin, callback) {
+        // Requests with no Origin header (curl, server-to-server, Render's
+        // own health checks) are always allowed through.
+        if (!origin || config.clientUrls.includes(origin)) {
+          return callback(null, true);
+        }
+        return callback(Object.assign(new Error(`Origin ${origin} is not allowed by CORS.`), { statusCode: 403 }));
+      },
       credentials: true,
     }),
   );
 
   app.use(express.json({ limit: "32kb" }));
   app.use(morgan("dev"));
+
+  // Lightweight, unauthenticated health check for Render/uptime monitors.
+  app.get("/", (request, response) => response.json({ ok: true, service: "wescol-report-server" }));
+  app.get("/api/health", (request, response) => response.json({ ok: true }));
 
   app.use("/api/auth", createAuthRoutes(authController));
 
