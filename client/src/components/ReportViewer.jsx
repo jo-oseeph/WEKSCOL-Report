@@ -13,7 +13,6 @@ function ReportViewer({ report }) {
   );
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [month, setMonth] = useState("");
   const [locations, setLocations] = useState([]);
   const [result, setResult] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,10 +34,10 @@ function ReportViewer({ report }) {
   const query = useMemo(() => {
     const [first, second, zone, section] = locationSelection;
     if (["cane-supply", "daily-weighment"].includes(report.id)) {
-      return { unit: first, sector: second, zone, section, dateFrom, dateTo, ...(report.id === "cane-supply" && month ? { month } : {}) };
+      return { unit: first, sector: second, zone, section, dateFrom, dateTo };
     }
     return { plant: first, region: second, zone, section, dateFrom, dateTo };
-  }, [locationSelection, dateFrom, dateTo, month, report.id]);
+  }, [locationSelection, dateFrom, dateTo, report.id]);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -145,22 +144,12 @@ function ReportViewer({ report }) {
             </div>
 
           </div>
+          {report.id === "cane-supply" ? (
+            <p className="report-filter-hint">
+              The Daily Detailed report covers one full month at a time. Choose a Date From and Date To within the same month (or leave both blank for the current month).
+            </p>
+          ) : null}
         </div>
-
-        {report.id === "cane-supply" ? (
-          <div className="report-filter-group">
-            <span className="report-filter-group-label">Monthly Summary</span>
-            <div className="report-filter-field">
-              <label htmlFor="month">Month</label>
-              <input
-                id="month"
-                type="month"
-                value={month}
-                onChange={(event) => setMonth(event.target.value)}
-              />
-            </div>
-          </div>
-        ) : null}
 
         <div className="report-filter-actions">
           <button type="submit" className="report-generate-btn">
@@ -175,7 +164,10 @@ function ReportViewer({ report }) {
       {showResults && result && (
         <div className="report-results">
           <div className="report-results-heading">
-            <h3 className="report-results-title">{result.name}</h3>
+            <h3 className="report-results-title">
+              {result.name}
+              {result.monthLabel ? <span className="report-results-month"> — {result.monthLabel}</span> : null}
+            </h3>
             <div className="report-variant-tabs" role="tablist" aria-label="Report view">
               {[{ id: "detailed", label: "Detailed Report" }, { id: "summary", label: "Summary Report" }].map((mode) => {
                 const isActive = activeVariant === mode.id;
