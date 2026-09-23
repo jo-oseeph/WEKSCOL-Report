@@ -1,7 +1,7 @@
 import { loadCell } from "./notebookLoader.js";
 import { executeHarvestingQuery } from "./sqlExecutor.js";
 import { getDefinition } from "./queryDefinitions.js";
-import { inferSummaryGroup, normalizeFilters, queryParameters } from "./filterUtils.js";
+import { inferSummaryGroup, normalizeFilters, normalizeValue, queryParameters } from "./filterUtils.js";
 import { injectDirectFilters, injectMonthlyFilters } from "./sqlFilters.js";
 
 // The notebook queries alias the location columns inconsistently (e.g.
@@ -32,6 +32,19 @@ function reorderLocationColumnsFirst(columns) {
   return [...locationColumns, ...otherColumns];
 }
 
+// Formats a "YYYY-MM" value as a human-readable month/year label (e.g.
+// "August 2026") so the client can show which month a Daily Detailed report
+// covers, without needing its own date-formatting logic.
+function monthLabelFor(monthValue) {
+  if (!monthValue) return null;
+  const [year, month] = monthValue.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleString("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 // Normalizes Cane Supply database rows for the report response.
 function normalizeResult(result, variant, group, filters) {
   const renamedColumns = result.columns.map(normalizeLocationColumnName);
@@ -39,34 +52,74 @@ function normalizeResult(result, variant, group, filters) {
   const rows = result.rows.map((row) => Object.fromEntries(
     Object.entries(row).map(([key, value]) => [normalizeLocationColumnName(key), value]),
   ));
-  return { variant, group, groupLabel: group[0].toUpperCase() + group.slice(1), filters, columns, rows };
+  return {
+    variant,
+    group,
+    groupLabel: group[0].toUpperCase() + group.slice(1),
+    filters,
+    monthLabel: variant === "detailed" ? monthLabelFor(filters.month) : null,
+    columns,
+    rows,
+  };
 }
 
 // Formats a Date as "YYYY-MM" (the same shape the client's <input type="month">
-// sends), used to default the Daily Detailed report to the current month
-// when the user has not explicitly picked one.
+// previously sent), used to default the Daily Detailed report to the
+// current month when the user has not picked any date.
 function currentMonthValue() {
   const now = new Date();
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
+// Extracts the "YYYY-MM" portion of a "YYYY-MM-DD" date string.
+function monthOf(dateString) {
+  return dateString.slice(0, 7);
+}
+
+// The Cane Supply "Daily Detailed" report only has a single Date Range
+// filter (Date From / Date To) -- there is no separate "Month" field. Both
+// dates must fall within the same calendar month, since the underlying
+// pivot query (notebook cells 21-24) always reports a full month, one
+// column per day. When only one date is given, that date's month is used;
+// when neither is given, the current month is used.
+function resolveMonthFromDateRange(filters) {
+  if (filters.dateFrom && filters.dateTo) {
+    if (monthOf(filters.dateFrom) !== monthOf(filters.dateTo)) {
+      throw Object.assign(
+        new Error("Date From and Date To must be within the same month for the Cane Supply Daily Detailed report."),
+        { statusCode: 400 },
+      );
+    }
+    return monthOf(filters.dateFrom);
+  }
+  if (filters.dateFrom) return monthOf(filters.dateFrom);
+  if (filters.dateTo) return monthOf(filters.dateTo);
+  return currentMonthValue();
+}
+
 export async function queryCaneSupply(query = {}) {
-  const filters = normalizeFilters(query);
   const variant = query.variant === "summary" ? "summary" : "detailed";
+  // Read the raw Date From/To before normalizeFilters() applies its 180-day
+  // lookback default (that default exists for other report paths and would
+  // otherwise be mistaken for a user-selected date when resolving the month
+  // below).
+  const rawDateFrom = normalizeValue(query.dateFrom);
+  const rawDateTo = normalizeValue(query.dateTo);
+
+  const filters = normalizeFilters(query);
   const group = inferSummaryGroup(filters);
 
   // The "Daily Detailed" report (notebook cells 21-24) pivots net weight
   // into one column per day of a given month, at the location depth the
   // user picked (unit only, +sector, +zone, +section). This is always the
-  // correct query for the "detailed" variant of Cane Supply -- previously it
-  // only ran when a month was explicitly chosen, and otherwise fell back to
-  // a flat listing (cell 17) that always groups by Unit + Sector, which is
-  // why a unit-level report kept showing a Sector column even when Sector
-  // was never selected. Defaulting to the current month whenever the caller
-  // hasn't picked one keeps the "Daily Detailed" pivot in effect for every
-  // detailed request, regardless of whether a month was chosen.
-  if (variant === "detailed" && !filters.month) {
-    filters.month = currentMonthValue();
+  // correct query for the "detailed" variant of Cane Supply. The month to
+  // pivot on is derived from the Date From / Date To range (validated to be
+  // within the same month above); Date From/To are then cleared so the
+  // pivot always returns the full month rather than only the selected days.
+  if (variant === "detailed") {
+    filters.month = resolveMonthFromDateRange({ dateFrom: rawDateFrom, dateTo: rawDateTo });
+    filters.dateFrom = null;
+    filters.dateTo = null;
   }
 
   const definitionVariant = variant === "detailed" ? "detailedByMonth" : "summary";

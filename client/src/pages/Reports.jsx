@@ -6,6 +6,7 @@ import ReportViewer from "../components/ReportViewer.jsx";
 import ReportsOverview from "../components/ReportsOverview.jsx";
 import { AvatarPicker, UserAvatar } from "../components/UserAvatar.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import httpClient from "../api/httpClient.js";
 import "../styles/Reports.css";
 
 function Reports() {
@@ -39,14 +40,13 @@ function Reports() {
   useEffect(() => {
     let isMounted = true;
 
-    fetch("/api/reports/catalog", { credentials: "include" })
-      .then((response) => response.json().then((body) => ({ response, body })))
-      .then(({ response, body }) => {
-        if (!response.ok) throw new Error(body.error || "Unable to load report catalog.");
-        if (isMounted) setReportCategories(body.categories || []);
+    httpClient
+      .get("/reports/catalog")
+      .then((response) => {
+        if (isMounted) setReportCategories(response.data.categories || []);
       })
       .catch((error) => {
-        if (isMounted) setCatalogError(error.message);
+        if (isMounted) setCatalogError(error.response?.data?.error || "Unable to load report catalog.");
       });
 
     return () => {

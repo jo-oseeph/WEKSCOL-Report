@@ -2,7 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import LocationFilter, {
   createDefaultLocationSelection,
 } from "./LocationFilter.jsx";
+import httpClient from "../api/httpClient.js";
 import "../styles/ReportViewer.css";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 const RESULTS_PER_PAGE = 50;
 
@@ -13,7 +16,6 @@ function ReportViewer({ report }) {
   );
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [month, setMonth] = useState("");
   const [locations, setLocations] = useState([]);
   const [result, setResult] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -22,23 +24,20 @@ function ReportViewer({ report }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const filterSource = ["cane-supply", "daily-weighment"].includes(report.id) ? "?source=harvesting" : "";
-    fetch(`/api/reports/filters${filterSource}`, { credentials: "include" })
-      .then((response) => response.json().then((body) => ({ response, body })))
-      .then(({ response, body }) => {
-        if (!response.ok) throw new Error(body.error || "Unable to load filters.");
-        setLocations(body.locations || []);
-      })
-      .catch((requestError) => setError(requestError.message));
+    const params = ["cane-supply", "daily-weighment"].includes(report.id) ? { source: "harvesting" } : undefined;
+    httpClient
+      .get("/reports/filters", { params })
+      .then((response) => setLocations(response.data.locations || []))
+      .catch((requestError) => setError(requestError.response?.data?.error || "Unable to load filters."));
   }, [report.id]);
 
   const query = useMemo(() => {
     const [first, second, zone, section] = locationSelection;
     if (["cane-supply", "daily-weighment"].includes(report.id)) {
-      return { unit: first, sector: second, zone, section, dateFrom, dateTo, ...(report.id === "cane-supply" && month ? { month } : {}) };
+      return { unit: first, sector: second, zone, section, dateFrom, dateTo };
     }
     return { plant: first, region: second, zone, section, dateFrom, dateTo };
-  }, [locationSelection, dateFrom, dateTo, month, report.id]);
+  }, [locationSelection, dateFrom, dateTo, report.id]);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -57,15 +56,13 @@ function ReportViewer({ report }) {
     try {
       const params = new URLSearchParams(queryString);
       params.set("variant", variant);
-      const response = await fetch(`/api/reports/${report.id}?${params.toString()}`, { credentials: "include" });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "Unable to generate report.");
-      setResult(body);
-      setActiveVariant(body.variant || variant);
+      const response = await httpClient.get(`/reports/${report.id}`, { params });
+      setResult(response.data);
+      setActiveVariant(response.data.variant || variant);
       setCurrentPage(1);
       setShowResults(true);
     } catch (requestError) {
-      setError(requestError.message);
+      setError(requestError.response?.data?.error || "Unable to generate report.");
       setShowResults(false);
     } finally {
       setIsLoading(false);
@@ -85,7 +82,11 @@ function ReportViewer({ report }) {
   function download(format) {
     const params = new URLSearchParams(queryString);
     params.set("variant", activeVariant);
-    window.location.assign(`/api/reports/${report.id}/export.${format}?${params.toString()}`);
+    // File downloads are a full browser navigation (not an XHR/axios call),
+    // so they must use an absolute URL to the backend in production, since a
+    // relative "/api/..." URL would resolve against the frontend's own
+    // origin (Vercel) instead of the backend (Render).
+    window.location.assign(`${API_BASE_URL}/api/reports/${report.id}/export.${format}?${params.toString()}`);
   }
 
   const totalPages = result ? Math.max(1, Math.ceil(result.rows.length / RESULTS_PER_PAGE)) : 1;
@@ -145,22 +146,12 @@ function ReportViewer({ report }) {
             </div>
 
           </div>
+          {report.id === "cane-supply" ? (
+            <p className="report-filter-hint">
+              The Daily Detailed report covers one full month at a time. Choose a Date From and Date To within the same month (or leave both blank for the current month).
+            </p>
+          ) : null}
         </div>
-
-        {report.id === "cane-supply" ? (
-          <div className="report-filter-group">
-            <span className="report-filter-group-label">Monthly Summary</span>
-            <div className="report-filter-field">
-              <label htmlFor="month">Month</label>
-              <input
-                id="month"
-                type="month"
-                value={month}
-                onChange={(event) => setMonth(event.target.value)}
-              />
-            </div>
-          </div>
-        ) : null}
 
         <div className="report-filter-actions">
           <button type="submit" className="report-generate-btn">
@@ -175,7 +166,10 @@ function ReportViewer({ report }) {
       {showResults && result && (
         <div className="report-results">
           <div className="report-results-heading">
-            <h3 className="report-results-title">{result.name}</h3>
+            <h3 className="report-results-title">
+              {result.name}
+              {result.monthLabel ? <span className="report-results-month"> — {result.monthLabel}</span> : null}
+            </h3>
             <div className="report-variant-tabs" role="tablist" aria-label="Report view">
               {[{ id: "detailed", label: "Detailed Report" }, { id: "summary", label: "Summary Report" }].map((mode) => {
                 const isActive = activeVariant === mode.id;
