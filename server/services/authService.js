@@ -188,12 +188,24 @@ const createAuthService = ({
         const resetUrl = `${clientUrl.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
         await emailService.sendPasswordReset({ to: user.email, resetUrl });
       } catch (error) {
-        await passwordResetTokenRepository.deleteForUser(user.id);
+        try {
+          await passwordResetTokenRepository.deleteForUser(user.id);
+        } catch (cleanupError) {
+          console.error("Unable to remove password reset token after email failure:", {
+            code: cleanupError?.code,
+            message: cleanupError?.message,
+          });
+        }
+
         console.error("Unable to send password reset email:", {
           code: error?.code,
           responseCode: error?.responseCode,
           message: error?.message,
         });
+        throw createServiceError(
+          "Password reset email service is temporarily unavailable. Please try again later.",
+          503,
+        );
       }
     },
     async resetPassword(details = {}) {
