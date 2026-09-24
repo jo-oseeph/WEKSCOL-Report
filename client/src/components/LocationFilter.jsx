@@ -2,7 +2,7 @@ import React from "react";
 import { LOCATION_LEVELS } from "../data/locationData";
 import "../styles/LocationFilter.css";
 
-// selection is an array of four values (one per level), each "all" by default.
+
 function LocationFilter({ selection, onChange, locations = [], labels = LOCATION_LEVELS, fields }) {
   const filterFields = fields || ["plant", "region", "zone", "section"];
   const optionsFor = (levelIndex, parentId) => {
@@ -17,7 +17,7 @@ function LocationFilter({ selection, onChange, locations = [], labels = LOCATION
   function handleLevelChange(levelIndex, value) {
     const next = [...selection];
     next[levelIndex] = value;
-    // Selecting a new value resets every level below it.
+   
     for (let i = levelIndex + 1; i < next.length; i++) {
       next[i] = "all";
     }
