@@ -1,4 +1,4 @@
-import { loadInvestmentBaseRows } from "./baseQueryLoader.js";
+import { loadInvestmentBaseRows, loadInvestmentLocationRows } from "./baseQueryLoader.js";
 import { getFarmerInvestmentSummary } from "./investmentCsvLoader.js";
 
 const CACHE_TTL_MS = 15 * 60 * 1000;
@@ -7,6 +7,11 @@ const GROUPS = ["unit", "sector", "zone", "section"];
 let baseCache = null;
 let baseCacheExpiresAt = 0;
 let baseInFlight = null;
+let locationCache = null;
+let locationCacheExpiresAt = 0;
+let locationInFlight = null;
+const reportCache = new Map();
+const reportInFlight = new Map();
 
 function createError(message, statusCode = 500) {
   return Object.assign(new Error(message), { statusCode });
@@ -83,7 +88,18 @@ function normalizeCsvRow(row) {
   };
 }
 
-async function loadBaseRows() {
+async function loadBaseRows(query = {}) {
+  const hasFilters = [query.unit, query.sector, query.zone, query.section, query.caneType, query.dateFrom, query.dateTo]
+    .some((value) => filterValue(value));
+  if (hasFilters) {
+    const startedAt = Date.now();
+    const result = await loadInvestmentBaseRows(query);
+    if (!result || !Array.isArray(result.rows)) {
+      throw createError("The Investment SQL query returned no usable rows.", 500);
+    }
+    console.info(`Investment filtered report query completed in ${Date.now() - startedAt}ms (${result.rows.length} base rows).`);
+    return result.rows.map(normalizeBaseRow);
+  }
   const now = Date.now();
   if (baseCache && now < baseCacheExpiresAt) return baseCache;
   if (!baseInFlight) {
@@ -256,8 +272,8 @@ function buildSummaryRows(rows, group) {
   };
 }
 
-async function loadJoinedRows() {
-  const [baseRows, csvRows] = await Promise.all([loadBaseRows(), getFarmerInvestmentSummary()]);
+async function loadJoinedRows(query = {}) {
+  const [baseRows, csvRows] = await Promise.all([loadBaseRows(query), getFarmerInvestmentSummary()]);
   if (!csvRows?.length) throw createError("The Investment Dashboard data source returned no farmer summaries.", 503);
   const investmentById = new Map(csvRows.map((row) => {
     const normalized = normalizeCsvRow(row);
@@ -270,7 +286,32 @@ async function loadJoinedRows() {
 }
 
 export async function queryInvestmentReport(query = {}) {
-  const { filters, rows: filteredRows } = applyFilters(await loadJoinedRows(), query);
+  const cacheKey = JSON.stringify({
+    variant: query.variant === "summary" ? "summary" : "detailed",
+    unit: filterValue(query.unit),
+    sector: filterValue(query.sector),
+    zone: filterValue(query.zone),
+    section: filterValue(query.section),
+    caneType: filterValue(query.caneType),
+    dateFrom: filterValue(query.dateFrom),
+    dateTo: filterValue(query.dateTo),
+  });
+  const cached = reportCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+  if (reportInFlight.has(cacheKey)) return reportInFlight.get(cacheKey);
+
+  const request = buildInvestmentReport(query)
+    .then((value) => {
+      reportCache.set(cacheKey, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+      return value;
+    })
+    .finally(() => reportInFlight.delete(cacheKey));
+  reportInFlight.set(cacheKey, request);
+  return request;
+}
+
+async function buildInvestmentReport(query = {}) {
+  const { filters, rows: filteredRows } = applyFilters(await loadJoinedRows(query), query);
   const variant = query.variant === "summary" ? "summary" : "detailed";
   const summaryGroup = selectedSummaryGroup(filters);
   const summary = variant === "summary" ? buildSummaryRows(filteredRows, summaryGroup) : null;
@@ -296,12 +337,46 @@ export async function queryInvestmentReport(query = {}) {
 }
 
 export async function getInvestmentFilters() {
-  const rows = await loadBaseRows();
-  const locations = rows.map((row) => ({ unit: row.unit, sector: row.sector, zone: row.zone, section: row.section }));
-  return {
-    caneTypes: ["Mill Cane", "Seed Cane"],
-    units: [...new Set(locations.map((row) => row.unit).filter(Boolean))].sort(),
-    locations: [...new Map(locations.map((row) => [JSON.stringify(row), row])).values()].sort((a, b) =>
-      `${a.unit}|${a.sector}|${a.zone}|${a.section}`.localeCompare(`${b.unit}|${b.sector}|${b.zone}|${b.section}`)),
-  };
+  const now = Date.now();
+  if (!locationCache || now >= locationCacheExpiresAt) {
+    if (!locationInFlight) {
+      const startedAt = Date.now();
+      locationInFlight = loadInvestmentLocationRows()
+        .then((result) => {
+          console.info(`Investment filter query completed in ${Date.now() - startedAt}ms (${result.rows.length} location rows).`);
+          const locations = result.rows.map((row) => ({
+            unit: deriveUnit(row.Region_Name),
+            sector: normalizeText(row.Sector_Name),
+            zone: normalizeText(row.Zone_Name),
+            section: normalizeText(row.Section_Name),
+          }));
+          const uniqueLocations = [...new Map(
+            locations.map((row) => [JSON.stringify(row), row]),
+          ).values()].sort((a, b) =>
+            `${a.unit}|${a.sector}|${a.zone}|${a.section}`.localeCompare(`${b.unit}|${b.sector}|${b.zone}|${b.section}`));
+          const filters = {
+            caneTypes: ["Mill Cane", "Seed Cane"],
+            units: [...new Set(uniqueLocations.map((row) => row.unit).filter(Boolean))].sort(),
+            locations: uniqueLocations,
+          };
+          locationCache = filters;
+          locationCacheExpiresAt = Date.now() + CACHE_TTL_MS;
+          return filters;
+        })
+        .catch((error) => {
+          console.error(`Investment filter query failed after ${Date.now() - startedAt}ms:`, error.message);
+          throw error;
+        })
+        .finally(() => {
+          locationInFlight = null;
+        });
+    }
+    try {
+      return await locationInFlight;
+    } catch (error) {
+      if (locationCache) return locationCache;
+      throw error;
+    }
+  }
+  return locationCache;
 }
