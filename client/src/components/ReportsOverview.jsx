@@ -45,8 +45,8 @@ const overviewStats = [
     tone: "sky",
   },
   {
-    label: "Registered growers",
-    value: "1,364",
+    label: "Registered farmers",
+    value: "7,364",
     detail: "Across all zones and regions",
     tone: "rose",
   },

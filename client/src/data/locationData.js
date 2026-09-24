@@ -12,8 +12,7 @@ function registerNode(node) {
   return node;
 }
 
-// Generates the deeper levels (Zone -> Section -> Sublocation -> Village)
-// under a given parent, two children per level, so the tree stays compact.
+
 function generateChildren(parentId, levels, childrenPerLevel = 2) {
   if (levels.length === 0) return undefined;
 
@@ -64,9 +63,7 @@ export const plants = [
   makePlant("Kabras", []),
 ];
 
-// Returns the option list (id + name) for a given level index (0 = Plant),
-// based on the id selected at the previous level ("all" or undefined means
-// no parent has been chosen yet, so there are no options for this level).
+
 export function getOptionsForLevel(levelIndex, parentId) {
   if (levelIndex === 0) {
     return plants.map(({ id, name }) => ({ id, name }));

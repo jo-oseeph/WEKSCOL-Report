@@ -7,6 +7,7 @@ import {
   queryReport,
 } from "../services/reportService.js";
 import { getHarvestingFilters } from "../modules/agriculture/harvesting/harvestingReportService.js";
+import { getInvestmentFilters } from "../modules/agriculture/investment/investmentReportService.js";
 import { getFlatReportCatalog, getReportModuleCatalog } from "../modules/index.js";
 
 function safeName(value) {
@@ -119,7 +120,9 @@ const createReportController = () => {
       response.json(
         request.query.source === "harvesting"
           ? await getHarvestingFilters()
-          : await getReportFilters(),
+          : request.query.source === "investment"
+            ? await getInvestmentFilters()
+            : await getReportFilters(),
       );
     } catch (error) {
       next(error);
