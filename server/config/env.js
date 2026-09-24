@@ -45,8 +45,10 @@ const loadConfig = () => {
       driver: process.env.REPORT_DB_DRIVER || "ODBC Driver 17 for SQL Server",
       encrypt: process.env.REPORT_DB_ENCRYPT !== "false",
       trustServerCertificate: process.env.REPORT_DB_TRUST_SERVER_CERTIFICATE === "true",
-      connectionTimeout: Number(process.env.REPORT_DB_CONNECTION_TIMEOUT || 120000),
-      requestTimeout: Number(process.env.REPORT_DB_REQUEST_TIMEOUT || 120000),
+      // Keep database waits bounded. Very large values turn a slow/unreachable
+      // report database into a request that hangs for minutes or hours.
+      connectionTimeout: Math.min(Number(process.env.REPORT_DB_CONNECTION_TIMEOUT || 30000), 180000),
+      requestTimeout: Math.min(Number(process.env.REPORT_DB_REQUEST_TIMEOUT || 180000), 180000),
     },
     session: {
       cookieName: "wescol_session",

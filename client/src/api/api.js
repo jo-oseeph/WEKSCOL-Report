@@ -29,9 +29,9 @@ function unwrapError(error, fallbackMessage) {
   return new Error(error.response.data?.error || fallbackMessage);
 }
 
-async function request(method, url, { data, params, fallbackMessage } = {}) {
+async function request(method, url, { data, params, fallbackMessage, timeout } = {}) {
   try {
-    const response = await client.request({ method, url, data, params });
+    const response = await client.request({ method, url, data, params, timeout });
     return response.data;
   } catch (error) {
     throw unwrapError(
@@ -96,11 +96,18 @@ export const reports = {
   getFilters: (params) =>
     request("GET", "/reports/filters", {
       params,
+      // Filter dropdowns should fail fast when SQL Server is unavailable;
+      // they must not leave the report screen waiting for two minutes.
+      timeout: 30000,
       fallbackMessage: "Unable to load filters.",
     }),
   run: (reportId, params) =>
     request("GET", `/reports/${reportId}`, {
       params,
+      // Report generation can legitimately take longer than the lightweight
+      // filter requests. The backend database request timeout is the single
+      // authoritative deadline; Axios must not create a second shorter one.
+      timeout: 0,
       fallbackMessage: "Unable to generate report.",
     }),
   // Export downloads are a full browser navigation (not an XHR/axios call),

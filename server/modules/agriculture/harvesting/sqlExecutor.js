@@ -64,12 +64,22 @@ function classifyError(error) {
 
   const code = error.code || error.originalError?.code;
   const isConnectionIssue =
-    code === "ETIMEOUT" ||
     code === "ESOCKET" ||
     code === "ECONNCLOSED" ||
     code === "ECONNREFUSED" ||
     code === "ELOGIN" ||
     /failed to connect/i.test(error.message || "");
+
+  const isQueryTimeout =
+    code === "ETIMEOUT" ||
+    /request failed to complete in \d+ms|timeout/i.test(error.message || "");
+
+  if (isQueryTimeout) {
+    return Object.assign(
+      new Error(`Harvesting report query timed out after the configured database limit: ${error.message}`),
+      { statusCode: 504 },
+    );
+  }
 
   if (isConnectionIssue) {
     return Object.assign(
