@@ -19,6 +19,9 @@ const createEmailService = (emailConfig) => {
         host: emailConfig.host,
         port: emailConfig.port,
         secure: emailConfig.secure,
+        connectionTimeout: emailConfig.connectionTimeout,
+        greetingTimeout: emailConfig.greetingTimeout,
+        socketTimeout: emailConfig.socketTimeout,
         auth: { user: emailConfig.user, pass: emailConfig.password },
       })
     : null;

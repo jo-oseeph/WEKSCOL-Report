@@ -5,6 +5,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 const client = axios.create({
   baseURL: `${API_BASE_URL}/api`,
+  timeout: 15000,
   // Session auth relies on an HttpOnly cookie; this must be enabled on every
   // request (and matched by the server's CORS "credentials" setting) for the
   // cookie to be sent/accepted across the Vercel <-> Render origin boundary.
@@ -17,6 +18,9 @@ const client = axios.create({
 // Normalizes axios errors into plain Error objects with the server's message
 // (when available) so every caller can just read `error.message`.
 function unwrapError(error, fallbackMessage) {
+  if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+    return new Error("The request timed out. Please try again.");
+  }
   if (!error.response) {
     return new Error(
       "Unable to reach the server. Please check your connection and try again.",
