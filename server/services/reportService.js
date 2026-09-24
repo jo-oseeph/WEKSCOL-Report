@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import duckdb from "duckdb";
 import ExcelJS from "exceljs";
 import { queryHarvestingReport } from "../modules/agriculture/harvesting/harvestingReportService.js";
+import { queryInvestmentReport } from "../modules/agriculture/investment/investmentReportService.js";
 
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
 const workbookPath = path.resolve(serverDirectory, "../../reports/Customer Care.xlsx");
@@ -120,6 +121,12 @@ const reports = {
     },
     summaryGroups: ["unit", "sector", "zone", "section", "month"],
     source: "notebook",
+  },
+  overdue: {
+    name: "Investment Overdue Report",
+    description: "Agriculture investment details and summaries by unit, sector, zone and section.",
+    variants: { detailed: "__INVESTMENT__", summary: "__INVESTMENT__" },
+    source: "investment",
   },
 };
 
@@ -417,6 +424,10 @@ export async function queryReport(reportId, query = {}) {
   if (!report) throw createError("Report not found.", 404);
   if (report.source === "notebook") {
     const result = await queryHarvestingReport({ ...query, reportId });
+    return { id: reportId, name: report.name, description: report.description, variants: Object.keys(report.variants), ...result };
+  }
+  if (report.source === "investment") {
+    const result = await queryInvestmentReport(query);
     return { id: reportId, name: report.name, description: report.description, variants: Object.keys(report.variants), ...result };
   }
   if (report.source === "weighment") {

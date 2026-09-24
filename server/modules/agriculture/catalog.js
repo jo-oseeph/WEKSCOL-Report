@@ -31,6 +31,13 @@ const reportMetadata = {
     variants: ["detailed", "summary"],
     summaryGroups: ["unit", "sector", "zone", "section", "month"],
   },
+  overdue: {
+    id: "overdue",
+    name: "Investment Overdue Report",
+    description: "Agriculture investment details and summaries by unit, sector, zone and section.",
+    variants: ["detailed", "summary"],
+    summaryGroups: ["unit", "sector", "zone", "section"],
+  },
 };
 
 export const agricultureModule = {
@@ -51,6 +58,11 @@ export const agricultureModule = {
       id: "harvesting",
       name: "Harvesting",
       reports: [reportMetadata["cane-supply"], reportMetadata["daily-weighment"]],
+    },
+    {
+      id: "investment",
+      name: "Investment",
+      reports: [reportMetadata.overdue],
     },
   ],
 };

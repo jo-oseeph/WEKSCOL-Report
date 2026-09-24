@@ -15,27 +15,35 @@ function ReportViewer({ report }) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [locations, setLocations] = useState([]);
+  const [caneTypes, setCaneTypes] = useState([]);
   const [result, setResult] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeVariant, setActiveVariant] = useState("detailed");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [caneType, setCaneType] = useState("all");
 
   useEffect(() => {
-    const params = ["cane-supply", "daily-weighment"].includes(report.id) ? { source: "harvesting" } : undefined;
+    const source = ["cane-supply", "daily-weighment"].includes(report.id)
+      ? "harvesting"
+      : report.id === "overdue" ? "investment" : undefined;
+    const params = source ? { source } : undefined;
     reportsApi
       .getFilters(params)
-      .then((data) => setLocations(data.locations || []))
+      .then((data) => {
+        setLocations(data.locations || []);
+        setCaneTypes(data.caneTypes || []);
+      })
       .catch((requestError) => setError(requestError.message));
   }, [report.id]);
 
   const query = useMemo(() => {
     const [first, second, zone, section] = locationSelection;
-    if (["cane-supply", "daily-weighment"].includes(report.id)) {
-      return { unit: first, sector: second, zone, section, dateFrom, dateTo };
+    if (["cane-supply", "daily-weighment", "overdue"].includes(report.id)) {
+      return { unit: first, sector: second, zone, section, caneType, dateFrom, dateTo };
     }
     return { plant: first, region: second, zone, section, dateFrom, dateTo };
-  }, [locationSelection, dateFrom, dateTo, report.id]);
+  }, [locationSelection, caneType, dateFrom, dateTo, report.id]);
 
   // Strips "all"/empty values so they are not sent to the backend as filters.
   const cleanParams = useMemo(() => {
@@ -46,7 +54,7 @@ function ReportViewer({ report }) {
     return params;
   }, [query]);
 
-  const isHarvesting = ["cane-supply", "daily-weighment"].includes(report.id);
+  const isHarvesting = ["cane-supply", "daily-weighment", "overdue"].includes(report.id);
   const filterLocations = locations;
 
   async function loadReport(variant = "detailed") {
@@ -113,6 +121,16 @@ function ReportViewer({ report }) {
             fields={isHarvesting ? ["unit", "sector", "zone", "section"] : undefined}
           />
         </div>
+
+        {report.id === "overdue" ? (
+          <div className="report-filter-group">
+            <span className="report-filter-group-label">Cane Type</span>
+            <select value={caneType} onChange={(event) => setCaneType(event.target.value)}>
+              <option value="all">All Cane Types</option>
+              {caneTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+            </select>
+          </div>
+        ) : null}
 
         <div className="report-filter-group">
           <span className="report-filter-group-label">Date Range</span>

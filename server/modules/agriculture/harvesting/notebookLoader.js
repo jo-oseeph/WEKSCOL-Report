@@ -35,3 +35,32 @@ export async function loadCell(cellIndex, type = "sql") {
   if (!source) throw createError(`Harvesting notebook cell ${cellIndex} is missing.`);
   return type === "python-sql" ? extractPythonSql(source) : cleanSqlCell(source);
 }
+
+// Strips the ipython-sql "%%sql <capture_var> <<" header some cells use
+// (e.g. "%%sql base_result <<") in addition to the plain "%%sql" header,
+// since that variable-capture syntax is not valid T-SQL on its own.
+function cleanCapturingSqlCell(source) {
+  return source.replace(/^\s*%%sql\s+\S+\s*<<\s*/i, "").replace(/^\s*%%sql\s*/i, "").trim().replace(/;\s*$/, "");
+}
+
+// Loads and concatenates a contiguous range of SQL cells (inclusive) into a
+// single multi-statement batch, separated by semicolons. Used for reports
+// whose source query spans several notebook cells building temp tables step
+// by step (e.g. the Investment/Overdue report's #FERT -> #BASE -> #PGI
+// pipeline), which must run together in one session for the temp tables to
+// remain visible across statements.
+export async function loadCellRange(startIndex, endIndex) {
+  const notebook = await loadNotebook();
+  const statements = [];
+  for (let index = startIndex; index <= endIndex; index += 1) {
+    const cell = notebook.cells?.[index];
+    const source = Array.isArray(cell?.source) ? cell.source.join("") : "";
+    if (!source || cell.cell_type !== "code") continue;
+    const cleaned = cleanCapturingSqlCell(source);
+    if (cleaned) statements.push(cleaned);
+  }
+  if (!statements.length) {
+    throw createError(`Harvesting notebook cells ${startIndex}-${endIndex} contain no SQL.`);
+  }
+  return statements.join(";\n\n");
+}
