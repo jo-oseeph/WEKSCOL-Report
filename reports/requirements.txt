@@ -1,3 +1,4 @@
 duckdb
 sqlalchemy
 pyodbc
+pandas
