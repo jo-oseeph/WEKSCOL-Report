@@ -106,9 +106,25 @@ const createReportController = () => {
     // Returns the available report categories and report definitions.
     catalog(request, response, next) {
       try {
+        const isAdmin = request.user?.role === "admin";
+        const permittedReports = isAdmin
+          ? getFlatReportCatalog()
+          : getFlatReportCatalog().filter((report) => request.user?.permissions?.includes(report.id));
+        const permittedReportIds = new Set(permittedReports.map((report) => report.id));
+        const categories = getReportModuleCatalog()
+          .map((category) => ({
+            ...category,
+            subcategories: category.subcategories
+              .map((subcategory) => ({
+                ...subcategory,
+                reports: subcategory.reports.filter((report) => permittedReportIds.has(report.id)),
+              }))
+              .filter((subcategory) => isAdmin || subcategory.reports.length > 0),
+          }))
+          .filter((category) => isAdmin || category.subcategories.length > 0);
         response.json({
-          categories: getReportModuleCatalog(),
-          reports: getFlatReportCatalog(),
+          categories,
+          reports: permittedReports,
         });
       } catch (error) {
         next(error);
@@ -117,6 +133,16 @@ const createReportController = () => {
     // Returns filter values for the requested report source.
     async filters(request, response, next) {
     try {
+      const isAdmin = request.user?.role === "admin";
+      const hasHarvestingAccess = request.user?.permissions?.some((reportId) =>
+        ["cane-supply", "daily-weighment"].includes(reportId),
+      );
+      const hasCustomerCareAccess = request.user?.permissions?.some((reportId) =>
+        ["open-requests", "resolved-requests", "farmer-requests"].includes(reportId),
+      );
+      if (!isAdmin && (request.query.source === "harvesting" ? !hasHarvestingAccess : !hasCustomerCareAccess)) {
+        return next(Object.assign(new Error("You do not have access to these report filters."), { statusCode: 403 }));
+      }
       response.json(
         request.query.source === "harvesting"
           ? await getHarvestingFilters()

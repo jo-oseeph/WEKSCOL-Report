@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "import:sqlite": "node scripts/importSqliteToNeon.js"
+    "import:sqlite": "node scripts/importSqliteToNeon.js",
+    "admin:seed": "node scripts/seedAdmin.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

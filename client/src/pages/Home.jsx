@@ -107,6 +107,7 @@ function Home() {
               Reports
             </a>
           )}
+          {user?.role === "admin" ? <Link className="site-nav-link" to="/admin">Admin</Link> : null}
         </nav>
         {user ? (
           <div className="site-user-profile">

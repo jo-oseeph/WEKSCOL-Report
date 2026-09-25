@@ -7,16 +7,23 @@ import runMigrations from "./db/migrate.js";
 import createUserRepository from "./db/userRepository.js";
 import createPasswordResetTokenRepository from "./db/passwordResetTokenRepository.js";
 import createSessionRepository from "./db/sessionRepository.js";
+import createReportPermissionRepository from "./db/reportPermissionRepository.js";
 import createAuthController from "./controllers/authController.js";
+import createAdminController from "./controllers/adminController.js";
 import createReportController from "./controllers/reportController.js";
 import createAuthRoutes from "./routes/authRoutes.js";
+import createAdminRoutes from "./routes/adminRoutes.js";
 import createAuthService from "./services/authService.js";
 import createSessionService from "./services/sessionService.js";
 import createEmailService from "./services/emailService.js";
 import createReportRoutes from "./routes/reportRoutes.js";
 import requireAuth from "./middleware/authMiddleware.js";
+import requireAdmin from "./middleware/adminMiddleware.js";
+import requireReportPermission from "./middleware/reportPermissionMiddleware.js";
 import errorHandler from "./middleware/errorHandler.js";
 import notFound from "./middleware/notFound.js";
+import { getFlatReportCatalog } from "./modules/index.js";
+import createAdminService from "./services/adminService.js";
 
 const config = loadConfig();
 
@@ -50,10 +57,12 @@ const startServer = async () => {
   const passwordResetTokenRepository =
     createPasswordResetTokenRepository(db);
   const sessionRepository = createSessionRepository(db);
+  const reportPermissionRepository = createReportPermissionRepository(db);
 
   const sessionService = createSessionService({
     sessionRepository,
     userRepository,
+    reportPermissionRepository,
     sessionConfig: config.session,
   });
 
@@ -63,6 +72,7 @@ const startServer = async () => {
     userRepository,
     sessionService,
     passwordResetTokenRepository,
+    reportPermissionRepository,
     emailService,
     clientUrl: config.clientUrl,
   });
@@ -72,6 +82,15 @@ const startServer = async () => {
     sessionService,
     sessionConfig: config.session,
   });
+
+  const reportCatalog = getFlatReportCatalog();
+  const adminService = createAdminService({
+    userRepository,
+    reportPermissionRepository,
+    sessionService,
+    reportIds: reportCatalog.map((report) => report.id),
+  });
+  const adminController = createAdminController({ adminService, reportCatalog });
 
   const reportController = createReportController();
 
@@ -111,12 +130,19 @@ const startServer = async () => {
   app.use("/api/auth", createAuthRoutes(authController));
 
   app.use(
+    "/api/admin",
+    requireAuth({ sessionService, cookieName: config.session.cookieName }),
+    requireAdmin,
+    createAdminRoutes(adminController),
+  );
+
+  app.use(
     "/api/reports",
     requireAuth({
       sessionService,
       cookieName: config.session.cookieName,
     }),
-    createReportRoutes(reportController),
+    createReportRoutes(reportController, requireReportPermission),
   );
 
   app.use(notFound);

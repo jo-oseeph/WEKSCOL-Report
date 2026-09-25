@@ -7,7 +7,7 @@ function ProtectedRoute() {
   const location = useLocation();
 
   if (isLoading) return <div className="auth-shell"><p className="auth-note">Checking your session...</p></div>;
-  if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
+  if (!user) return <Navigate to="/" replace state={{ from: location }} />;
   return <Outlet />;
 }
 

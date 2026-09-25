@@ -11,6 +11,7 @@ export const reportModules = [
   agricultureModule,
   emptyModule("transport", "Transport", "Cane haulage, fleet, logistics and dispatch reports."),
   emptyModule("finance", "Finance", "Payables, receivables, ledger and commercial reports."),
+  emptyModule("factory", "Factory", "Factory production, quality and processing reports."),
   emptyModule("hr", "Human Resource", "Payroll and workforce management reports."),
 ];
 
