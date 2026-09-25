@@ -2,12 +2,13 @@ import React from "react";
 import { LOCATION_LEVELS } from "../data/locationData";
 import "../styles/LocationFilter.css";
 
-// selection is an array of four values (one per level), each "all" by default.
-function LocationFilter({ selection, onChange, locations = [] }) {
+
+function LocationFilter({ selection, onChange, locations = [], labels = LOCATION_LEVELS, fields }) {
+  const filterFields = fields || ["plant", "region", "zone", "section"];
   const optionsFor = (levelIndex, parentId) => {
-    if (levelIndex === 0) return [...new Set(locations.map((item) => item.plant))].filter(Boolean).map((name) => ({ id: name, name }));
-    const parentField = ["plant", "region", "zone"][levelIndex - 1];
-    const childField = ["region", "zone", "section"][levelIndex - 1];
+    if (levelIndex === 0) return [...new Set(locations.map((item) => item[filterFields[0]]))].filter(Boolean).map((name) => ({ id: name, name }));
+    const parentField = filterFields[levelIndex - 1];
+    const childField = filterFields[levelIndex];
     return [...new Set(locations.filter((item) => !parentId || parentId === "all" || item[parentField] === parentId).map((item) => item[childField]))]
       .filter(Boolean)
       .map((name) => ({ id: name, name }));
@@ -16,7 +17,7 @@ function LocationFilter({ selection, onChange, locations = [] }) {
   function handleLevelChange(levelIndex, value) {
     const next = [...selection];
     next[levelIndex] = value;
-    // Selecting a new value resets every level below it.
+   
     for (let i = levelIndex + 1; i < next.length; i++) {
       next[i] = "all";
     }
@@ -25,7 +26,7 @@ function LocationFilter({ selection, onChange, locations = [] }) {
 
   return (
     <div className="location-filter">
-      {LOCATION_LEVELS.map((levelLabel, levelIndex) => {
+      {labels.map((levelLabel, levelIndex) => {
         const parentId = levelIndex === 0 ? null : selection[levelIndex - 1];
         const options = optionsFor(levelIndex, parentId);
         const disabled = levelIndex > 0 && (!parentId || parentId === "all");

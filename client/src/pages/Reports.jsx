@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { reportCategories } from "../data/reportsData";
+import { FaHome } from "react-icons/fa";
 import CategoryTabs from "../components/CategoryTabs.jsx";
 import ReportViewer from "../components/ReportViewer.jsx";
 import ReportsOverview from "../components/ReportsOverview.jsx";
 import { AvatarPicker, UserAvatar } from "../components/UserAvatar.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { reports as reportsApi } from "../api/api.js";
 import "../styles/Reports.css";
 
 function Reports() {
@@ -28,10 +29,30 @@ function Reports() {
     avatarUrl: "",
   });
   const [formMessage, setFormMessage] = useState("");
+  const [reportCategories, setReportCategories] = useState([]);
+  const [catalogError, setCatalogError] = useState("");
 
   const querySectionRef = useRef(null);
   const userInitials =
     `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
+
+  // Loads the report catalog from the backend for the navigation menu.
+  useEffect(() => {
+    let isMounted = true;
+
+    reportsApi
+      .getCatalog()
+      .then((data) => {
+        if (isMounted) setReportCategories(data.categories || []);
+      })
+      .catch((error) => {
+        if (isMounted) setCatalogError(error.message);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function openProfileDetails() {
     setProfileForm({
@@ -128,6 +149,7 @@ function Reports() {
 
           <div className="reports-navigation">
             <Link className="reports-home-link" to="/">
+              <FaHome className="reports-navigation-icon" aria-hidden="true" />
               Home
             </Link>
             <CategoryTabs
@@ -313,6 +335,7 @@ function Reports() {
 
       <main className="reports-page">
         <ReportsOverview hasSelectedReport={Boolean(selectedReport)} />
+        {catalogError ? <p className="report-error">{catalogError}</p> : null}
         {selectedReport ? (
           <section
             className="reports-content-panel reports-query-panel"

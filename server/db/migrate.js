@@ -7,38 +7,45 @@ const migrationsDirectory = path.join(
   "migrations",
 );
 
-const runMigrations = (db) => {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS schema_migrations (
-      version TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      applied_at INTEGER NOT NULL
-    );
-  `);
-
+const runMigrations = async (pool) => {
   const migrations = fs
     .readdirSync(migrationsDirectory)
     .filter((file) => file.endsWith(".sql"))
     .sort();
-  const hasMigration = db.prepare(
-    "SELECT 1 FROM schema_migrations WHERE version = ?",
-  );
-  const recordMigration = db.prepare(
-    "INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)",
-  );
+  const client = await pool.connect();
 
-  for (const filename of migrations) {
-    const version = filename.split("_")[0];
-    if (hasMigration.get(version)) continue;
+  try {
+    await client.query("BEGIN");
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        version TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        applied_at BIGINT NOT NULL
+      );
+    `);
 
-    const sql = fs.readFileSync(path.join(migrationsDirectory, filename), "utf8");
-    db.transaction(() => {
-      const hasAvatarColumn =
-        filename === "003_add_avatar_url.sql" &&
-        db.prepare("PRAGMA table_info(users)").all().some((column) => column.name === "avatar_url");
-      if (!hasAvatarColumn) db.exec(sql);
-      recordMigration.run(version, filename, Date.now());
-    })();
+    for (const filename of migrations) {
+      const version = filename.split("_")[0];
+      const migrationResult = await client.query(
+        "SELECT 1 FROM schema_migrations WHERE version = $1",
+        [version],
+      );
+      if (migrationResult.rowCount > 0) continue;
+
+      const sql = fs.readFileSync(path.join(migrationsDirectory, filename), "utf8");
+      await client.query(sql);
+      await client.query(
+        "INSERT INTO schema_migrations (version, name, applied_at) VALUES ($1, $2, $3)",
+        [version, filename, Date.now()],
+      );
+    }
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
   }
 };
 

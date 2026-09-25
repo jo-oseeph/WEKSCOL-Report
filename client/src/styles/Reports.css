@@ -44,6 +44,9 @@
 }
 
 .reports-home-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   flex: none;
   color: #d9eee0;
   font-size: 12px;
@@ -51,6 +54,12 @@
   padding-right: 16px;
   margin-right: 4px;
   border-right: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.reports-navigation-icon {
+  width: 13px;
+  height: 13px;
+  flex: none;
 }
 
 .reports-home-link:hover {
@@ -284,7 +293,7 @@
   flex-direction: column;
   width: min(100%, 1480px);
   margin: 0 auto;
-  padding: 36px 32px 52px;
+  padding: 16px 32px 52px;
   gap: 24px;
 }
 
@@ -411,7 +420,7 @@
   }
 
   .reports-page {
-    padding: 24px 16px 36px;
+    padding: 12px 16px 36px;
   }
 
   .reports-content-panel {

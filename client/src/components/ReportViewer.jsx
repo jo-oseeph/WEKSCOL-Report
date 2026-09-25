@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import LocationFilter, {
   createDefaultLocationSelection,
 } from "./LocationFilter.jsx";
+import { reports as reportsApi } from "../api/api.js";
 import "../styles/ReportViewer.css";
 
 const RESULTS_PER_PAGE = 50;
@@ -14,43 +15,55 @@ function ReportViewer({ report }) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [locations, setLocations] = useState([]);
+  const [caneTypes, setCaneTypes] = useState([]);
   const [result, setResult] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeVariant, setActiveVariant] = useState("detailed");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [caneType, setCaneType] = useState("all");
 
   useEffect(() => {
-    fetch("/api/reports/filters", { credentials: "include" })
-      .then((response) => response.json().then((body) => ({ response, body })))
-      .then(({ response, body }) => {
-        if (!response.ok) throw new Error(body.error || "Unable to load filters.");
-        setLocations(body.locations || []);
+    const source = ["cane-supply", "daily-weighment"].includes(report.id)
+      ? "harvesting"
+      : report.id === "overdue" ? "investment" : undefined;
+    const params = source ? { source } : undefined;
+    reportsApi
+      .getFilters(params)
+      .then((data) => {
+        setLocations(data.locations || []);
+        setCaneTypes(data.caneTypes || []);
       })
       .catch((requestError) => setError(requestError.message));
-  }, []);
+  }, [report.id]);
 
   const query = useMemo(() => {
-    const [plant, region, zone, section] = locationSelection;
-    return { plant, region, zone, section, dateFrom, dateTo };
-  }, [locationSelection, dateFrom, dateTo]);
+    const [first, second, zone, section] = locationSelection;
+    if (["cane-supply", "daily-weighment", "overdue"].includes(report.id)) {
+      return { unit: first, sector: second, zone, section, caneType, dateFrom, dateTo };
+    }
+    return { plant: first, region: second, zone, section, dateFrom, dateTo };
+  }, [locationSelection, caneType, dateFrom, dateTo, report.id]);
 
-  const queryString = useMemo(() => {
-    const params = new URLSearchParams();
+  // Strips "all"/empty values so they are not sent to the backend as filters.
+  const cleanParams = useMemo(() => {
+    const params = {};
     Object.entries(query).forEach(([key, value]) => {
-      if (value && value !== "all") params.set(key, value);
+      if (value && value !== "all") params[key] = value;
     });
-    return params.toString();
+    return params;
   }, [query]);
 
-  async function handleGenerate(event) {
-    event.preventDefault();
+  const isHarvesting = ["cane-supply", "daily-weighment", "overdue"].includes(report.id);
+  const filterLocations = locations;
+
+  async function loadReport(variant = "detailed") {
     setIsLoading(true);
     setError("");
     try {
-      const response = await fetch(`/api/reports/${report.id}?${queryString}`, { credentials: "include" });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "Unable to generate report.");
-      setResult(body);
+      const data = await reportsApi.run(report.id, { ...cleanParams, variant });
+      setResult(data);
+      setActiveVariant(data.variant || variant);
       setCurrentPage(1);
       setShowResults(true);
     } catch (requestError) {
@@ -61,14 +74,30 @@ function ReportViewer({ report }) {
     }
   }
 
+  async function handleGenerate(event) {
+    event.preventDefault();
+    await loadReport("detailed");
+  }
+
+  async function handleVariantChange(variant) {
+    if (variant === activeVariant || isLoading) return;
+    await loadReport(variant);
+  }
+
   function download(format) {
-    window.location.assign(`/api/reports/${report.id}/export.${format}${queryString ? `?${queryString}` : ""}`);
+    window.location.assign(reportsApi.getExportUrl(report.id, format, { ...cleanParams, variant: activeVariant }));
   }
 
   const totalPages = result ? Math.max(1, Math.ceil(result.rows.length / RESULTS_PER_PAGE)) : 1;
   const visibleRows = result
     ? result.rows.slice((currentPage - 1) * RESULTS_PER_PAGE, currentPage * RESULTS_PER_PAGE)
     : [];
+  const firstVisibleRow = result && result.rows.length > 0
+    ? (currentPage - 1) * RESULTS_PER_PAGE + 1
+    : 0;
+  const lastVisibleRow = result
+    ? Math.min(currentPage * RESULTS_PER_PAGE, result.rows.length)
+    : 0;
 
   function goToPage(page) {
     setCurrentPage(Math.min(Math.max(page, 1), totalPages));
@@ -87,9 +116,21 @@ function ReportViewer({ report }) {
           <LocationFilter
             selection={locationSelection}
             onChange={setLocationSelection}
-            locations={locations}
+            locations={filterLocations}
+            labels={isHarvesting ? ["Unit", "Sector", "Zone", "Section"] : undefined}
+            fields={isHarvesting ? ["unit", "sector", "zone", "section"] : undefined}
           />
         </div>
+
+        {report.id === "overdue" ? (
+          <div className="report-filter-group">
+            <span className="report-filter-group-label">Cane Type</span>
+            <select value={caneType} onChange={(event) => setCaneType(event.target.value)}>
+              <option value="all">All Cane Types</option>
+              {caneTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+            </select>
+          </div>
+        ) : null}
 
         <div className="report-filter-group">
           <span className="report-filter-group-label">Date Range</span>
@@ -114,6 +155,11 @@ function ReportViewer({ report }) {
             </div>
 
           </div>
+          {report.id === "cane-supply" ? (
+            <p className="report-filter-hint">
+              The Daily Detailed report covers one full month at a time. Choose a Date From and Date To within the same month (or leave both blank for the current month).
+            </p>
+          ) : null}
         </div>
 
         <div className="report-filter-actions">
@@ -128,9 +174,34 @@ function ReportViewer({ report }) {
 
       {showResults && result && (
         <div className="report-results">
+          <div className="report-results-heading">
+            <h3 className="report-results-title">
+              {result.name}
+              {result.monthLabel ? <span className="report-results-month"> — {result.monthLabel}</span> : null}
+            </h3>
+            <div className="report-variant-tabs" role="tablist" aria-label="Report view">
+              {[{ id: "detailed", label: "Detailed Report" }, { id: "summary", label: "Summary Report" }].map((mode) => {
+                const isActive = activeVariant === mode.id;
+                return (
+                <button
+                  key={mode.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  className={`report-variant-tab${isActive ? " is-active" : ""}`}
+                  onClick={() => handleVariantChange(mode.id)}
+                  disabled={isLoading}
+                >
+                  {mode.label}
+                </button>
+                );
+              })}
+            </div>
+            {activeVariant === "summary" ? <span className="report-summary-group-label">Grouped to: {result.groupLabel || "Unit"}</span> : null}
+          </div>
           <div className="report-results-toolbar">
             <span className="report-results-count">
-              {result.rows.length} record{result.rows.length === 1 ? "" : "s"} found
+              Showing {firstVisibleRow}–{lastVisibleRow} of {result.rows.length} record{result.rows.length === 1 ? "" : "s"}
             </span>
             <div className="report-results-actions">
               <button type="button" className="report-action-btn" onClick={() => download("pdf")}>Export PDF</button>

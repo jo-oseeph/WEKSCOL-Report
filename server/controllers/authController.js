@@ -2,8 +2,8 @@ import cookies from "../utils/cookies.js";
 
 const { clearSessionCookie, getSessionToken, setSessionCookie } = cookies;
 
-const currentUserId = (request, sessionService, cookieName) => {
-  const userId = sessionService.getUserIdFromToken(
+const currentUserId = async (request, sessionService, cookieName) => {
+  const userId = await sessionService.getUserIdFromToken(
     getSessionToken(request, cookieName),
   );
   if (!userId) {
@@ -16,10 +16,10 @@ const createAuthController = ({ authService, sessionService, sessionConfig }) =>
   const cookieName = sessionConfig.cookieName;
 
   return {
-    getCurrentUser(request, response, next) {
+    async getCurrentUser(request, response, next) {
       try {
         const token = getSessionToken(request, cookieName);
-        response.json({ user: sessionService.getUserFromToken(token) });
+        response.json({ user: await sessionService.getUserFromToken(token) });
       } catch (error) {
         next(error);
       }
@@ -41,10 +41,10 @@ const createAuthController = ({ authService, sessionService, sessionConfig }) =>
         next(error);
       }
     },
-    logout(request, response, next) {
+    async logout(request, response, next) {
       try {
         const token = getSessionToken(request, cookieName);
-        sessionService.deleteSession(token);
+        await sessionService.deleteSession(token);
         clearSessionCookie(response, cookieName, sessionConfig);
         response.json({ ok: true });
       } catch (error) {
@@ -54,7 +54,7 @@ const createAuthController = ({ authService, sessionService, sessionConfig }) =>
     async updateProfile(request, response, next) {
       try {
         const user = await authService.updateProfile(
-          currentUserId(request, sessionService, cookieName),
+          await currentUserId(request, sessionService, cookieName),
           request.body,
         );
         response.json({ user });
@@ -65,10 +65,28 @@ const createAuthController = ({ authService, sessionService, sessionConfig }) =>
     async changePassword(request, response, next) {
       try {
         await authService.changePassword(
-          currentUserId(request, sessionService, cookieName),
+          await currentUserId(request, sessionService, cookieName),
           request.body,
         );
         response.json({ ok: true });
+      } catch (error) {
+        next(error);
+      }
+    },
+    async requestPasswordReset(request, response, next) {
+      try {
+        await authService.requestPasswordReset(request.body);
+        response.json({
+          message: "If an account exists for that email, a password reset link has been sent.",
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+    async resetPassword(request, response, next) {
+      try {
+        await authService.resetPassword(request.body);
+        response.json({ message: "Your password has been reset. You can now sign in." });
       } catch (error) {
         next(error);
       }

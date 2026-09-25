@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useAuth } from "../context/AuthContext.jsx";
+import LoginForm from "./LoginForm.jsx";
+import RegisterForm from "./RegisterForm.jsx";
 import "../styles/Hero.css";
 
 const heroSlides = [
@@ -89,25 +90,11 @@ const heroSlides = [
   },
 ];
 
-const initialLogin = { username: "", password: "" };
-const initialRegister = {
-  firstName: "",
-  lastName: "",
-  email: "",
-  idNumber: "",
-  password: "",
-  confirmPassword: "",
-};
-
 function Hero() {
   const [activeSlide, setActiveSlide] = useState(0);
-  const [mode, setMode] = useState("login"); // "login" | "register"
-  const [login, setLogin] = useState(initialLogin);
-  const [register, setRegister] = useState(initialRegister);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login: authenticate, register: createAccount } = useAuth();
+  const [mode, setMode] = useState("login");
+  const [registerSuccessMessage, setRegisterSuccessMessage] = useState("");
+  const [prefillUsername, setPrefillUsername] = useState("");
   const formRef = useRef(null);
   const activeSlideContent = heroSlides[activeSlide];
 
@@ -121,47 +108,15 @@ function Hero() {
   const switchMode = (next) => {
     if (next === mode) return;
     setMode(next);
-    setError("");
-    setSuccess("");
+    setRegisterSuccessMessage("");
   };
 
-  const handleLoginChange = (e) =>
-    setLogin((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
-  const handleRegisterChange = (e) =>
-    setRegister((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    setIsSubmitting(true);
-    try {
-      await authenticate({ email: login.username, password: login.password });
-    } catch (requestError) {
-      setError(requestError.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleRegisterSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    setIsSubmitting(true);
-    try {
-      await createAccount(register);
-      setLogin({ username: register.email, password: "" });
-      setRegister(initialRegister);
-      setMode("login");
-      setSuccess("Account created. Sign in to access the reports.");
-    } catch (requestError) {
-      setError(requestError.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // Moves the user to the login form, pre-filled, after a successful registration.
+  function handleRegistered(registeredEmail) {
+    setPrefillUsername(registeredEmail);
+    setMode("login");
+    setRegisterSuccessMessage("Account created. Sign in to access the reports.");
+  }
 
   return (
     <main className="auth-page">
@@ -216,121 +171,13 @@ function Hero() {
 
           <div key={mode} className="auth-form-wrap" ref={formRef}>
             {mode === "login" ? (
-              <form className="auth-form" onSubmit={handleLoginSubmit}>
-                <div className="auth-field">
-                  <label htmlFor="username">Username</label>
-                  <input
-                    id="username"
-                    name="username"
-                    type="text"
-                    autoComplete="username"
-                    value={login.username}
-                    onChange={handleLoginChange}
-                    placeholder="Username"
-                    required
-                  />
-                </div>
-
-                <div className="auth-field">
-                  <label htmlFor="password">Password</label>
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="current-password"
-                    value={login.password}
-                    onChange={handleLoginChange}
-                    placeholder="Password"
-                    required
-                  />
-                </div>
-
-                <div className="auth-row">
-                  <a className="auth-link-quiet" href="/forgot-password">
-                    Forgot password?
-                  </a>
-                </div>
-
-                {error ? <p className="auth-error">{error}</p> : null}
-                {success ? <p className="auth-success">{success}</p> : null}
-                <button className="auth-submit" type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Signing in..." : "Sign in"}
-                </button>
-              </form>
+              <LoginForm
+                successMessage={registerSuccessMessage}
+                onSuccessMessageClear={() => setRegisterSuccessMessage("")}
+                prefillUsername={prefillUsername}
+              />
             ) : (
-              <form className="auth-form" onSubmit={handleRegisterSubmit}>
-                <div className="auth-inline-grid">
-                  <div className="auth-field">
-                    <input
-                      id="firstName"
-                      name="firstName"
-                      type="text"
-                      autoComplete="given-name"
-                      value={register.firstName}
-                      onChange={handleRegisterChange}
-                      placeholder="First name"
-                      required
-                    />
-                  </div>
-
-                  <div className="auth-field">
-                    <input
-                      id="lastName"
-                      name="lastName"
-                      type="text"
-                      autoComplete="family-name"
-                      value={register.lastName}
-                      onChange={handleRegisterChange}
-                      placeholder="Last name"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="auth-field">
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    value={register.email}
-                    onChange={handleRegisterChange}
-                    placeholder="Email address"
-                    required
-                  />
-                </div>
-
-                <div className="auth-field">
-                  <input
-                    id="idNumber"
-                    name="idNumber"
-                    type="text"
-                    autoComplete="off"
-                    value={register.idNumber}
-                    onChange={handleRegisterChange}
-                    placeholder="ID number"
-                    required
-                  />
-                </div>
-
-                <div className="auth-field">
-                  <input
-                    id="reg-password"
-                    name="password"
-                    type="password"
-                    autoComplete="new-password"
-                    value={register.password}
-                    onChange={handleRegisterChange}
-                    placeholder="Password"
-                    required
-                  />
-                </div>
-
-                {error ? <p className="auth-error">{error}</p> : null}
-                <button className="auth-submit" type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Creating account..." : "Create account"}
-                </button>
-              </form>
+              <RegisterForm onRegistered={handleRegistered} />
             )}
           </div>
 

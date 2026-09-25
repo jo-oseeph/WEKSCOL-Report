@@ -1,9 +1,21 @@
 import React from "react";
+import {
+  FaIndustry,
+  FaMoneyBillWave,
+  FaSeedling,
+  FaTruck,
+  FaUsers,
+} from "react-icons/fa";
 import "../styles/CategoryTabs.css";
 
-// Small chevrons so it's visually obvious each level opens a menu:
-// "v" = opens downward (category -> subcategory), ">" = opens sideways
-// (subcategory -> report), matching the direction each dropdown appears in.
+const categoryIcons = {
+  agriculture: FaSeedling,
+  transport: FaTruck,
+  finance: FaMoneyBillWave,
+  factory: FaIndustry,
+  hr: FaUsers,
+};
+
 function ChevronDown() {
   return (
     <svg className="menu-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -18,6 +30,11 @@ function ChevronRight() {
       <path d="M3.5 2L6.5 5L3.5 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
+}
+
+function CategoryIcon({ categoryId }) {
+  const Icon = categoryIcons[categoryId];
+  return Icon ? <Icon className="category-menu-icon" aria-hidden="true" /> : null;
 }
 
 function CategoryTabs({
@@ -41,6 +58,7 @@ function CategoryTabs({
                   : "")
               }
             >
+              <CategoryIcon categoryId={category.id} />
               {category.name}
               <ChevronDown />
             </button>
