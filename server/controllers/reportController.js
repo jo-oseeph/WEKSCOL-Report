@@ -132,27 +132,32 @@ const createReportController = () => {
     },
     // Returns filter values for the requested report source.
     async filters(request, response, next) {
-    try {
-      const isAdmin = request.user?.role === "admin";
-      const hasHarvestingAccess = request.user?.permissions?.some((reportId) =>
-        ["cane-supply", "daily-weighment"].includes(reportId),
-      );
-      const hasCustomerCareAccess = request.user?.permissions?.some((reportId) =>
-        ["open-requests", "resolved-requests", "farmer-requests"].includes(reportId),
-      );
-      if (!isAdmin && (request.query.source === "harvesting" ? !hasHarvestingAccess : !hasCustomerCareAccess)) {
-        return next(Object.assign(new Error("You do not have access to these report filters."), { statusCode: 403 }));
+      try {
+        const isAdmin = request.user?.role === "admin";
+        const source = request.query.source;
+        const permittedFilterReports = source === "harvesting"
+          ? ["cane-supply", "daily-weighment"]
+          : source === "investment"
+            ? ["overdue"]
+            : ["open-requests", "resolved-requests", "farmer-requests"];
+        const hasFilterAccess = request.user?.permissions?.some((reportId) =>
+          permittedFilterReports.includes(reportId),
+        );
+
+        if (!isAdmin && !hasFilterAccess) {
+          return next(Object.assign(new Error("You do not have access to these report filters."), { statusCode: 403 }));
+        }
+
+        response.json(
+          source === "harvesting"
+            ? await getHarvestingFilters()
+            : source === "investment"
+              ? await getInvestmentFilters()
+              : await getReportFilters(),
+        );
+      } catch (error) {
+        next(error);
       }
-      response.json(
-        request.query.source === "harvesting"
-          ? await getHarvestingFilters()
-          : request.query.source === "investment"
-            ? await getInvestmentFilters()
-            : await getReportFilters(),
-      );
-    } catch (error) {
-      next(error);
-    }
     },
 
     // Streams the requested report as a CSV download.
