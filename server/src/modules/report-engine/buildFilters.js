@@ -1,18 +1,1 @@
-import sql from "mssql";
-import { httpError } from "../../shared/errors.js";
-
-export default function buildFilters(definition, query = {}) {
-  const clauses = [];
-  const parameters = {};
-  for (const param of definition.params) {
-    const value = query[param.name];
-    if (value === undefined || value === "" || value === "all") continue;
-    if (param.type === "date" && Number.isNaN(Date.parse(value))) throw httpError(`${param.name} must be a valid date.`, 400);
-    if (param.type === "number" && !Number.isFinite(Number(value))) throw httpError(`${param.name} must be numeric.`, 400);
-    clauses.push(param.sql);
-    parameters[param.name] = param.type === "number" ? Number(value) : value;
-  }
-  return { clauses, parameters };
-}
-
-export { sql };
+import sql from "mssql";import { httpError } from "../../shared/errors.js";export default function buildFilters(definition, query = {}) {  const clauses = [];  const parameters = {};  for (const param of definition.params) {    const value = query[param.name];    if (value === undefined || value === "" || value === "all") continue;    if (param.type === "date" && Number.isNaN(Date.parse(value))) throw httpError(`${param.name} must be a valid date.`, 400);    if (param.type === "number" && !Number.isFinite(Number(value))) throw httpError(`${param.name} must be numeric.`, 400);    clauses.push(param.sql);    parameters[param.name] = param.type === "number" ? Number(value) : value;  }  return { clauses, parameters };}export { sql };
