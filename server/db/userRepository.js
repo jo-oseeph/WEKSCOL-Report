@@ -21,30 +21,13 @@ const createUserRepository = (db) => {
     findById,
     findByEmail,
     findByIdNumber,
-    async create({ firstName, lastName, email, idNumber, avatarUrl, passwordHash, role = "user", status = "pending" }) {
+    async create({ firstName, lastName, email, idNumber, avatarUrl, passwordHash }) {
       const result = await db.query(
         `INSERT INTO users
-          (first_name, last_name, email, id_number, avatar_url, password_hash, role, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          (first_name, last_name, email, id_number, avatar_url, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        [firstName, lastName, email, idNumber, avatarUrl || null, passwordHash, role, status],
-      );
-      return result.rows[0];
-    },
-    async findAllForAdmin() {
-      const result = await db.query(
-        `SELECT id, first_name, last_name, email, id_number, avatar_url, role, status
-         FROM users
-         ORDER BY CASE status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END,
-                  first_name, last_name`,
-      );
-      return result.rows;
-    },
-    async updateStatus(id, status) {
-      const result = await db.query(
-        `UPDATE users SET status = $1 WHERE id = $2
-         RETURNING id, first_name, last_name, email, id_number, avatar_url, role, status`,
-        [status, id],
+        [firstName, lastName, email, idNumber, avatarUrl || null, passwordHash],
       );
       return result.rows[0];
     },

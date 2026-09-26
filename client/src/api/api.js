@@ -84,27 +84,6 @@ export const auth = {
     }),
 };
 
-export const admin = {
-  getUsers: () =>
-    request("GET", "/admin/users", {
-      fallbackMessage: "Unable to load users.",
-    }),
-  getReports: () =>
-    request("GET", "/admin/reports", {
-      fallbackMessage: "Unable to load report permissions.",
-    }),
-  updateUserStatus: (userId, status) =>
-    request("PATCH", `/admin/users/${userId}/status`, {
-      data: { status },
-      fallbackMessage: "Unable to update the user status.",
-    }),
-  updateUserPermissions: (userId, reportIds) =>
-    request("PUT", `/admin/users/${userId}/permissions`, {
-      data: { reportIds },
-      fallbackMessage: "Unable to update report permissions.",
-    }),
-};
-
 // ---------------------------------------------------------------------------
 // Report endpoints
 // ---------------------------------------------------------------------------

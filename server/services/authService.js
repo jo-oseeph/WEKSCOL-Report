@@ -11,9 +11,6 @@ const toUser = (user) => ({
   email: user.email,
   idNumber: user.id_number,
   avatarUrl: user.avatar_url || null,
-  role: user.role || "user",
-  status: user.status || "approved",
-  permissions: user.permissions || [],
 });
 
 const createServiceError = (message, statusCode) =>
@@ -68,6 +65,7 @@ function validateProfile(details = {}) {
     email: requiredText(details.email, "Email", 160).toLowerCase(),
     idNumber: requiredText(details.idNumber, "ID number", 80),
     avatarUrl: typeof details.avatarUrl === "string" ? details.avatarUrl.trim() : "",
+    password: typeof details.password === "string" ? details.password : "",
   };
 }
 
@@ -75,7 +73,6 @@ const createAuthService = ({
   userRepository,
   sessionService,
   passwordResetTokenRepository,
-  reportPermissionRepository,
   emailService,
   clientUrl,
   passwordSecurity = security,
@@ -115,20 +112,17 @@ const createAuthService = ({
       ) {
         throw createServiceError("Email or password is incorrect.", 401);
       }
-      if (user.status === "pending") {
-        throw createServiceError("Your account is awaiting administrator approval.", 403);
-      }
-      if (user.status === "rejected") {
-        throw createServiceError("Your account has not been approved for access.", 403);
-      }
-      const permissions = await reportPermissionRepository.findForUser(user.id);
       return {
-        user: toUser({ ...user, permissions }),
+        user: toUser(user),
         token: await sessionService.createSession(user.id),
       };
     },
     async updateProfile(userId, details) {
       const input = validateProfile(details);
+      if (input.password && input.password.length < 6) {
+        throw createServiceError("Use a password with at least 6 characters.", 400);
+      }
+
       const emailOwner = await userRepository.findByEmail(input.email);
       const idOwner = await userRepository.findByIdNumber(input.idNumber);
       if ((emailOwner && emailOwner.id !== userId) || (idOwner && idOwner.id !== userId)) {
@@ -137,8 +131,12 @@ const createAuthService = ({
 
       try {
         const user = await userRepository.updateProfile({ ...input, id: userId });
-        const permissions = await reportPermissionRepository.findForUser(user.id);
-        return toUser({ ...(await userRepository.findById(user.id)), permissions });
+        if (input.password) {
+          await passwordSecurity.hashPassword(input.password).then((hash) =>
+            userRepository.updatePassword(userId, hash),
+          );
+        }
+        return toUser(await userRepository.findById(user.id));
       } catch (error) {
         if (error?.code === "23505") {
           throw createServiceError("That email or ID number is already in use.", 409);
