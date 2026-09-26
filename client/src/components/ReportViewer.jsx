@@ -160,6 +160,7 @@ function ReportViewer({ report }) {
               The Daily Detailed report covers one full month at a time. Choose a Date From and Date To within the same month (or leave both blank for the current month).
             </p>
           ) : null}
+
         </div>
 
         <div className="report-filter-actions">
@@ -180,7 +181,8 @@ function ReportViewer({ report }) {
               {result.monthLabel ? <span className="report-results-month"> — {result.monthLabel}</span> : null}
             </h3>
             <div className="report-variant-tabs" role="tablist" aria-label="Report view">
-              {[{ id: "detailed", label: "Detailed Report" }, { id: "summary", label: "Summary Report" }].map((mode) => {
+              {(report.variants || ["detailed"]).map((variant) => {
+                const mode = { id: variant, label: report.variantLabels?.[variant] || variant.replaceAll("-", " ") };
                 const isActive = activeVariant === mode.id;
                 return (
                 <button
@@ -197,7 +199,7 @@ function ReportViewer({ report }) {
                 );
               })}
             </div>
-            {activeVariant === "summary" ? <span className="report-summary-group-label">Grouped to: {result.groupLabel || "Unit"}</span> : null}
+            {activeVariant !== "detailed" ? <span className="report-summary-group-label">Grouped to: {result.groupLabel || "Unit"}</span> : null}
           </div>
           <div className="report-results-toolbar">
             <span className="report-results-count">

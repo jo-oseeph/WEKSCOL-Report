@@ -1,0 +1,55 @@
+import sql from "mssql";
+import loadConfig from "../../config/env.js";
+
+let poolPromise;
+
+function connectionConfig() {
+  const { warehouse } = loadConfig();
+  if (!warehouse.server || !warehouse.database || !warehouse.user || !warehouse.password) {
+    throw Object.assign(new Error("Warehouse database credentials are not configured."), { statusCode: 503 });
+  }
+  return {
+    server: warehouse.server, database: warehouse.database, user: warehouse.user, password: warehouse.password,
+    connectionTimeout: warehouse.connectionTimeout, requestTimeout: warehouse.requestTimeout,
+    pool: { max: 10, min: 0, idleTimeoutMillis: 30000 },
+    options: { encrypt: warehouse.encrypt, trustServerCertificate: warehouse.trustServerCertificate },
+  };
+}
+
+export function getWarehousePool() {
+  if (!poolPromise) {
+    const pool = new sql.ConnectionPool(connectionConfig());
+    pool.on("error", () => { poolPromise = null; });
+    poolPromise = pool.connect().catch((error) => { poolPromise = null; throw error; });
+  }
+  return poolPromise;
+}
+
+function normalize(value) {
+  if (typeof value === "bigint") return Number(value);
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return value.map(normalize);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, normalize(item)]));
+  return value;
+}
+
+export async function executeWarehouseQuery(text, parameters = {}) {
+  try {
+    const request = (await getWarehousePool()).request();
+    for (const [name, value] of Object.entries(parameters)) {
+      if (/date/i.test(name)) request.input(name, sql.Date, value || null);
+      else if (/amount|threshold|years/i.test(name)) request.input(name, sql.Decimal(19, 4), value ?? null);
+      else request.input(name, sql.NVarChar(255), value || null);
+    }
+    const result = await request.query(text);
+    const rows = (result.recordset || []).map((row) => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, normalize(value)])));
+    return { columns: Object.keys(result.recordset?.[0] || {}), rows };
+  } catch (error) {
+    if (error.statusCode) throw error;
+    throw Object.assign(new Error(`Warehouse report query failed: ${error.message}`), { statusCode: 500 });
+  }
+}
+
+export async function closeWarehousePool() {
+  if (poolPromise) { const pool = await poolPromise.catch(() => null); poolPromise = null; if (pool) await pool.close(); }
+}
