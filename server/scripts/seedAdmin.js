@@ -1,6 +1,6 @@
-import loadConfig from "../config/env.js";
-import createDatabase from "../db/connection.js";
-import runMigrations from "../db/migrate.js";
+import loadConfig from "../src/config/env.js";
+import createDatabase from "../src/db/connection.js";
+import runMigrations from "../src/db/migrate.js";
 
 const emailFlagIndex = process.argv.indexOf("--email");
 const email = emailFlagIndex >= 0 ? process.argv[emailFlagIndex + 1] : "";

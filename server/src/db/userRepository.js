@@ -21,6 +21,10 @@ const createUserRepository = (db) => {
     findById,
     findByEmail,
     findByIdNumber,
+    async findAllForAdmin() {
+      const result = await db.query("SELECT * FROM users ORDER BY created_at DESC, id DESC");
+      return result.rows;
+    },
     async create({ firstName, lastName, email, idNumber, avatarUrl, passwordHash }) {
       const result = await db.query(
         `INSERT INTO users
@@ -47,6 +51,13 @@ const createUserRepository = (db) => {
         passwordHash,
         id,
       ]);
+    },
+    async updateStatus(id, status) {
+      const result = await db.query(
+        "UPDATE users SET status = $1 WHERE id = $2 RETURNING *",
+        [status, id],
+      );
+      return result.rows[0];
     },
   };
 };

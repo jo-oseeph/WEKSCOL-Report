@@ -1,8 +1,11 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import createAuthRoutes from "../routes/authRoutes.js";
-import requireAuth from "../middleware/authMiddleware.js";
+import createAuthRoutes from "./routes/authRoutes.js";
+import createAdminRoutes from "./routes/adminRoutes.js";
+import requireAuth from "./middleware/authMiddleware.js";
+import requireAdmin from "./middleware/adminMiddleware.js";
+import requireReportPermission from "./middleware/reportPermissionMiddleware.js";
 import createReportsRoutes from "./modules/reportRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import notFound from "./middleware/notFound.js";
@@ -19,12 +22,21 @@ export default async function createApp() {
   app.get("/api/health", (request, response) => response.json({ ok: true }));
   app.use("/api/auth", createAuthRoutes(container.authController));
   app.use(
+    "/api/admin",
+    requireAuth({
+      sessionService: container.sessionService,
+      cookieName: container.config.session.cookieName,
+    }),
+    requireAdmin,
+    createAdminRoutes(container.adminController),
+  );
+  app.use(
     "/api/reports",
     requireAuth({
       sessionService: container.sessionService,
       cookieName: container.config.session.cookieName,
     }),
-    createReportsRoutes(container.reportsController),
+    createReportsRoutes(container.reportsController, requireReportPermission),
   );
   app.use(notFound);
   app.use(errorHandler);

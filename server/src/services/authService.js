@@ -11,6 +11,9 @@ const toUser = (user) => ({
   email: user.email,
   idNumber: user.id_number,
   avatarUrl: user.avatar_url || null,
+  role: user.role || "user",
+  status: user.status || "approved",
+  permissions: user.permissions || [],
 });
 
 const createServiceError = (message, statusCode) =>

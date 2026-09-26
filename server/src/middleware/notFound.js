@@ -1,1 +1,5 @@
-export default function notFound(request, response) {  response.status(404).json({ error: "Not found." });}
+const notFound = (request, response) => {
+  response.status(404).json({ error: "Route not found." });
+};
+
+export default notFound;

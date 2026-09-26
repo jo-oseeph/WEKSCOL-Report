@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "import:sqlite": "node scripts/importSqliteToNeon.js"
+    "admin:seed": "node scripts/seedAdmin.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -20,7 +20,6 @@
     "pdfkit": "^0.17.2"
   },
   "devDependencies": {
-    "better-sqlite3": "^12.4.1",
     "nodemon": "^3.1.10"
   }
 }

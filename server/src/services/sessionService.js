@@ -2,7 +2,12 @@ import security from "../utils/security.js";
 
 const { createSessionToken, hashToken } = security;
 
-const createSessionService = ({ sessionRepository, userRepository, sessionConfig }) => {
+const createSessionService = ({
+  sessionRepository,
+  userRepository,
+  reportPermissionRepository,
+  sessionConfig,
+}) => {
   async function removeExpiredSessions() {
     await sessionRepository.deleteExpired(Date.now());
   }
@@ -22,16 +27,21 @@ const createSessionService = ({ sessionRepository, userRepository, sessionConfig
       if (!token) return null;
       const session = await sessionRepository.findValid(hashToken(token), Date.now());
       const user = session ? await userRepository.findById(session.user_id) : null;
-      return user
-        ? {
+       if (!user) return null;
+       const permissions = reportPermissionRepository
+         ? await reportPermissionRepository.findForUser(user.id)
+         : [];
+       return {
             id: user.id,
             firstName: user.first_name,
             lastName: user.last_name,
             email: user.email,
             idNumber: user.id_number,
             avatarUrl: user.avatar_url || null,
-          }
-        : null;
+             role: user.role || "user",
+             status: user.status || "approved",
+             permissions,
+           };
     },
     async getUserIdFromToken(token) {
       if (!token) return null;
