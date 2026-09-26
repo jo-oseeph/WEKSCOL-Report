@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
     "import:sqlite": "node scripts/importSqliteToNeon.js",
     "admin:seed": "node scripts/seedAdmin.js"
   },

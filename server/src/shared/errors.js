@@ -1,0 +1,1 @@
+export function httpError(message, statusCode = 500) { return Object.assign(new Error(message), { statusCode }); }

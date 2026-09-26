@@ -1,0 +1,14 @@
+export default {
+  id: "overdue", name: "Investment Overdue Report", description: "Investment requests and farmer investment status.",
+  categoryId: "agriculture", subcategoryId: "investment", variants: ["detailed", "summary"],
+  summaryGroups: ["unit", "sector", "zone", "section"],
+  params: [
+    { name: "unit", type: "string", sql: "Unit = @unit" },
+    { name: "sector", type: "string", sql: "Sector_Name = @sector" },
+    { name: "zone", type: "string", sql: "Zone_Name = @zone" },
+    { name: "section", type: "string", sql: "Section_Name = @section" },
+    { name: "caneType", type: "string", sql: "Cane_Type = @caneType" },
+    { name: "dateFrom", type: "date", sql: "Min_Created_On >= @dateFrom" },
+    { name: "dateTo", type: "date", sql: "Min_Created_On < DATEADD(DAY, 1, @dateTo)" },
+  ],
+};

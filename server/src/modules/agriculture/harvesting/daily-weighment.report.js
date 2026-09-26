@@ -1,0 +1,19 @@
+export default {
+  id: "daily-weighment",
+  name: "Daily Weighment Report",
+  description: "Daily cane weighment details and location summaries.",
+  categoryId: "agriculture",
+  subcategoryId: "harvesting",
+  queryModule: "harvesting",
+  variants: ["detailed", "summary"],
+  variantLabels: { detailed: "Detailed Report", summary: "Summary Report" },
+  summaryGroups: ["unit", "sector", "zone", "section"],
+  params: [
+    { name: "unit", type: "string", sql: "Unit = @unit" },
+    { name: "sector", type: "string", sql: "Sector_Name = @sector" },
+    { name: "zone", type: "string", sql: "Zone_Name = @zone" },
+    { name: "section", type: "string", sql: "Section_Name = @section" },
+    { name: "dateFrom", type: "date", sql: "Crush_Date >= @dateFrom" },
+    { name: "dateTo", type: "date", sql: "Crush_Date < DATEADD(DAY, 1, @dateTo)" },
+  ],
+};
