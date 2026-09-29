@@ -152,6 +152,9 @@ function Reports() {
               <FaHome className="reports-navigation-icon" aria-hidden="true" />
               Home
             </Link>
+            {user?.role === "admin" ? (
+              <Link className="reports-admin-link" to="/admin">Admin</Link>
+            ) : null}
             <CategoryTabs
               categories={reportCategories}
               selectedCategory={selectedCategory}

@@ -23,6 +23,15 @@ const createAdminService = ({ userRepository, reportPermissionRepository, sessio
       ));
     },
 
+    async getPermissions(userId) {
+      const user = await userRepository.findById(userId);
+      if (!user) throw Object.assign(new Error("User not found."), { statusCode: 404 });
+      return {
+        userId: user.id,
+        permissions: await reportPermissionRepository.findForUser(user.id),
+      };
+    },
+
     async updateStatus(userId, status) {
       if (!allowedStatuses.has(status)) {
         throw Object.assign(new Error("Invalid account status."), { statusCode: 400 });
@@ -53,6 +62,9 @@ const createAdminService = ({ userRepository, reportPermissionRepository, sessio
       }
       const user = await userRepository.findById(userId);
       if (!user) throw Object.assign(new Error("User not found."), { statusCode: 404 });
+      if (user.role !== "user" || user.status !== "approved") {
+        throw Object.assign(new Error("Report permissions can only be assigned to approved regular users."), { statusCode: 400 });
+      }
       await reportPermissionRepository.replaceForUser(userId, uniqueReportIds, grantedBy);
       return toAdminUser(user, uniqueReportIds);
     },

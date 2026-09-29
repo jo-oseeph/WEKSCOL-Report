@@ -27,7 +27,7 @@ const createSessionService = ({
       if (!token) return null;
       const session = await sessionRepository.findValid(hashToken(token), Date.now());
       const user = session ? await userRepository.findById(session.user_id) : null;
-       if (!user) return null;
+       if (!user || user.status !== "approved") return null;
        const permissions = reportPermissionRepository
          ? await reportPermissionRepository.findForUser(user.id)
          : [];

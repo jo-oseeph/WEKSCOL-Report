@@ -34,14 +34,15 @@ function Admin() {
 
   const userInitials =
     `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
+  const currentUserId = user ? user.id : null;
 
   const pendingUsers = useMemo(
     () => users.filter((account) => account.status === "pending"),
     [users],
   );
   const managedUsers = useMemo(
-    () => users.filter((account) => account.id !== user?.id),
-    [users, user?.id],
+    () => users.filter((account) => account.id !== currentUserId && account.role === "user"),
+    [users, currentUserId],
   );
 
   useEffect(() => {

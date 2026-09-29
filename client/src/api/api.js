@@ -93,8 +93,8 @@ export const reports = {
     request("GET", "/reports/catalog", {
       fallbackMessage: "Unable to load the report catalog.",
     }),
-  getFilters: (params) =>
-    request("GET", "/reports/filters", {
+  getFilters: (reportId, params) =>
+    request("GET", `/reports/${reportId}/filters`, {
       params,
       // Filter dropdowns should fail fast when SQL Server is unavailable;
       // they must not leave the report screen waiting for two minutes.
@@ -118,6 +118,35 @@ export const reports = {
     const search = new URLSearchParams(params).toString();
     return `${API_BASE_URL}/api/reports/${reportId}/export.${format}${search ? `?${search}` : ""}`;
   },
+};
+
+// ---------------------------------------------------------------------------
+// Administrator endpoints
+// ---------------------------------------------------------------------------
+
+export const admin = {
+  getUsers: () =>
+    request("GET", "/admin/users", {
+      fallbackMessage: "Unable to load users.",
+    }),
+  getReports: () =>
+    request("GET", "/admin/reports", {
+      fallbackMessage: "Unable to load reports.",
+    }),
+  getUserPermissions: (userId) =>
+    request("GET", `/admin/users/${userId}/permissions`, {
+      fallbackMessage: "Unable to load report permissions.",
+    }),
+  updateUserStatus: (userId, status) =>
+    request("PATCH", `/admin/users/${userId}/status`, {
+      data: { status },
+      fallbackMessage: "Unable to update account status.",
+    }),
+  updateUserPermissions: (userId, reportIds) =>
+    request("PUT", `/admin/users/${userId}/permissions`, {
+      data: { reportIds },
+      fallbackMessage: "Unable to save report permissions.",
+    }),
 };
 
 export default client;
