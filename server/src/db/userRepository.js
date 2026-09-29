@@ -22,16 +22,16 @@ const createUserRepository = (db) => {
     findByEmail,
     findByIdNumber,
     async findAllForAdmin() {
-      const result = await db.query("SELECT * FROM users ORDER BY created_at DESC, id DESC");
+      const result = await db.query("SELECT * FROM users ORDER BY id DESC");
       return result.rows;
     },
-    async create({ firstName, lastName, email, idNumber, avatarUrl, passwordHash }) {
+    async create({ firstName, lastName, email, idNumber, avatarUrl, passwordHash, role, status }) {
       const result = await db.query(
         `INSERT INTO users
-          (first_name, last_name, email, id_number, avatar_url, password_hash)
-         VALUES ($1, $2, $3, $4, $5, $6)
+          (first_name, last_name, email, id_number, avatar_url, password_hash, role, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
-        [firstName, lastName, email, idNumber, avatarUrl || null, passwordHash],
+        [firstName, lastName, email, idNumber, avatarUrl || null, passwordHash, role || "user", status || "pending"],
       );
       return result.rows[0];
     },

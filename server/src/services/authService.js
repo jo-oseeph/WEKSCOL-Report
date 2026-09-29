@@ -97,6 +97,8 @@ const createAuthService = ({
           ...input,
           avatarUrl: input.avatarUrl,
           passwordHash: await passwordSecurity.hashPassword(input.password),
+          role: "user",
+          status: "pending",
         });
         return toUser(user);
       } catch (error) {
@@ -114,6 +116,12 @@ const createAuthService = ({
         !(await passwordSecurity.comparePassword(password, user.password_hash))
       ) {
         throw createServiceError("Email or password is incorrect.", 401);
+      }
+      if (user.status === "pending") {
+        throw createServiceError("Your account is awaiting administrator approval.", 403);
+      }
+      if (user.status === "rejected") {
+        throw createServiceError("Your account was not approved for report access.", 403);
       }
       return {
         user: toUser(user),

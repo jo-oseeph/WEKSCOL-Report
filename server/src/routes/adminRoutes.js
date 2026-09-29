@@ -4,6 +4,7 @@ const createAdminRoutes = (controller) => {
   const router = Router();
   router.get("/users", controller.listUsers);
   router.get("/reports", controller.listReports);
+  router.get("/users/:userId/permissions", controller.getPermissions);
   router.patch("/users/:userId/status", controller.updateStatus);
   router.put("/users/:userId/permissions", controller.updatePermissions);
   return router;

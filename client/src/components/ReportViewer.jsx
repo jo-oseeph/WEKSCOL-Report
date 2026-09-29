@@ -29,7 +29,7 @@ function ReportViewer({ report }) {
       : report.id === "overdue" ? "investment" : undefined;
     const params = source ? { source } : undefined;
     reportsApi
-      .getFilters(params)
+      .getFilters(report.id, params)
       .then((data) => {
         setLocations(data.locations || []);
         setCaneTypes(data.caneTypes || []);

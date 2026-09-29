@@ -6,7 +6,7 @@ const migrationsDirectory = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   "migrations",
 );
-
+// this is migrate
 const runMigrations = async (pool) => {
   const migrations = fs
     .readdirSync(migrationsDirectory)

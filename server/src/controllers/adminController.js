@@ -11,6 +11,14 @@ const createAdminController = ({ adminService, reportCatalog }) => ({
     response.json({ reports: reportCatalog });
   },
 
+  async getPermissions(request, response, next) {
+    try {
+      response.json(await adminService.getPermissions(Number(request.params.userId)));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async updateStatus(request, response, next) {
     try {
       response.json({
