@@ -65,44 +65,50 @@ function CategoryTabs({
 
             {/* Opens below the category on hover */}
             <ul className="subcategory-dropdown">
-              {category.subcategories.map((subcategory) => (
-                <li className="subcategory-item" key={subcategory.id}>
-                  <button
-                    type="button"
-                    className={
-                      "subcategory-trigger" +
-                      (selectedSubcategory?.id === subcategory.id
-                        ? " subcategory-trigger-active"
-                        : "")
-                    }
-                  >
-                    {subcategory.name}
-                    <ChevronRight />
-                  </button>
-
-                  {/* Opens to the side of the subcategory on hover */}
-                  <ul className="report-flyout">
-                    {subcategory.reports.map((report) => (
-                      <li key={report.id}>
-                        <button
-                          type="button"
-                          className={
-                            "report-flyout-item" +
-                            (selectedReport?.id === report.id
-                              ? " report-flyout-item-active"
-                              : "")
-                          }
-                          onClick={() =>
-                            onSelectReport(category, subcategory, report)
-                          }
-                        >
-                          {report.name}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+              {category.subcategories.length === 0 ? (
+                <li className="category-empty-state">
+                  No reports available for this category.
                 </li>
-              ))}
+              ) : (
+                category.subcategories.map((subcategory) => (
+                  <li className="subcategory-item" key={subcategory.id}>
+                    <button
+                      type="button"
+                      className={
+                        "subcategory-trigger"+
+                        (selectedSubcategory?.id === subcategory.id
+                          ? " subcategory-trigger-active"
+                          : "")
+                      }
+                    >
+                      {subcategory.name}
+                      <ChevronRight />
+                    </button>
+
+                    {/* Opens to the side of the subcategory on hover */}
+                    <ul className="report-flyout">
+                      {subcategory.reports.map((report) => (
+                        <li key={report.id}>
+                          <button
+                            type="button"
+                            className={
+                              "report-flyout-item"+
+                              (selectedReport?.id === report.id
+                                ? " report-flyout-item-active"
+                                : "")
+                            }
+                            onClick={() =>
+                              onSelectReport(category, subcategory, report)
+                            }
+                          >
+                            {report.name}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))
+              )}
             </ul>
           </li>
         ))}

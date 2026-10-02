@@ -16,8 +16,7 @@ export function visibleReportCatalog(catalog, user) {
           reports: subcategory.reports.filter((report) => visibleReportIds.has(report.id)),
         }))
         .filter((subcategory) => subcategory.reports.length > 0),
-    }))
-    .filter((category) => category.subcategories.length > 0);
+    }));
 
   return { categories, reports };
 }
