@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { FaHome } from "react-icons/fa";
+import { FaHome, FaUsers } from "react-icons/fa";
 import CategoryTabs from "../components/CategoryTabs.jsx";
 import ReportViewer from "../components/ReportViewer.jsx";
 import ReportsOverview from "../components/ReportsOverview.jsx";
@@ -148,12 +148,15 @@ function Reports() {
           </div>
 
           <div className="reports-navigation">
-            <Link className="reports-home-link" to="/">
-              <FaHome className="reports-navigation-icon" aria-hidden="true" />
+            <Link className="category-nav-link" to="/">
+              <FaHome className="category-nav-icon" aria-hidden="true" />
               Home
             </Link>
             {user?.role === "admin" ? (
-              <Link className="reports-admin-link" to="/admin">Admin</Link>
+              <Link className="category-nav-link" to="/admin">
+                <FaUsers className="category-nav-icon" aria-hidden="true" />
+                Admin
+              </Link>
             ) : null}
             <CategoryTabs
               categories={reportCategories}

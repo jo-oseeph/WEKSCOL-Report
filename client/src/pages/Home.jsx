@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { FaChartBar, FaHome, FaUsers } from "react-icons/fa";
 import Hero from "../components/Hero.jsx";
 import { AvatarPicker, UserAvatar } from "../components/UserAvatar.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/Site.css";
+import "../styles/CategoryTabs.css";
 
 function Home() {
   const { user, isLoading, logout, updateProfile, changePassword } = useAuth();
@@ -93,20 +95,32 @@ function Home() {
           </span>
         </Link>
         <nav className="site-nav" aria-label="Main navigation">
-          <Link className="site-nav-link active" to="/">
+          <Link className="category-nav-link category-nav-link-active" to="/">
+            <FaHome className="category-nav-icon" aria-hidden="true" />
             Home
           </Link>
           {isLoading ? (
-            <span className="site-nav-link">Reports</span>
+            <span className="category-nav-link">
+              <FaChartBar className="category-nav-icon" aria-hidden="true" />
+              Reports
+            </span>
           ) : user ? (
-            <Link className="site-nav-link" to={reportsTarget}>
+            <Link className="category-nav-link" to={reportsTarget}>
+              <FaChartBar className="category-nav-icon" aria-hidden="true" />
               Reports
             </Link>
           ) : (
-            <a className="site-nav-link" href={reportsTarget}>
+            <a className="category-nav-link" href={reportsTarget}>
+              <FaChartBar className="category-nav-icon" aria-hidden="true" />
               Reports
             </a>
           )}
+          {user?.role === "admin" ? (
+            <Link className="category-nav-link" to="/admin">
+              <FaUsers className="category-nav-icon" aria-hidden="true" />
+              Admin
+            </Link>
+          ) : null}
         </nav>
         {user ? (
           <div className="site-user-profile">

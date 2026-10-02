@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext.jsx";
 
 
@@ -8,6 +9,7 @@ function LoginForm({ successMessage, onSuccessMessageClear, prefillUsername = ""
   const [login, setLogin] = useState({ ...initialLogin, username: prefillUsername });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { user, login: authenticate } = useAuth();
 
   const isFirstRender = useRef(true);
@@ -18,6 +20,7 @@ function LoginForm({ successMessage, onSuccessMessageClear, prefillUsername = ""
       return;
     }
     setLogin(initialLogin);
+    setShowPassword(false);
   }, [user]);
 
   function handleChange(event) {
@@ -33,6 +36,7 @@ function LoginForm({ successMessage, onSuccessMessageClear, prefillUsername = ""
     try {
       await authenticate({ email: login.username, password: login.password });
       setLogin(initialLogin);
+      setShowPassword(false);
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -56,18 +60,28 @@ function LoginForm({ successMessage, onSuccessMessageClear, prefillUsername = ""
         />
       </div>
 
-      <div className="auth-field">
+      <div className="auth-field auth-password-field">
         <label htmlFor="password">Password</label>
         <input
           id="password"
           name="password"
-          type="password"
+          type={showPassword ? "text" : "password"}
           autoComplete="new-password"
           value={login.password}
           onChange={handleChange}
           placeholder="Password"
           required
         />
+        <button
+          type="button"
+          className="auth-password-toggle"
+          onClick={() => setShowPassword((visible) => !visible)}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+          aria-pressed={showPassword}
+          title={showPassword ? "Hide password" : "Show password"}
+        >
+          {showPassword ? <FaEyeSlash aria-hidden="true" /> : <FaEye aria-hidden="true" />}
+        </button>
       </div>
 
       <div className="auth-row">
