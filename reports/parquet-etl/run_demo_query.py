@@ -7,7 +7,8 @@ queryable and fast - it does NOT touch SQL Server.
 from pathlib import Path
 import duckdb
 
-PARQUET_PATH = Path(__file__).parent / "data" / "report_base.parquet"
+# PARQUET_PATH = Path(__file__).parent / "data" / "report_base.parquet"
+PARQUET_PATH = Path(__file__).resolve().parents[2] / "reports" / "parquet-etl" / "data" / "report_base.parquet"
 
 DEMO_SQL = """
 SELECT
