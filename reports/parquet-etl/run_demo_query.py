@@ -51,9 +51,7 @@ WHERE (Description LIKE '%TSP FERTILIZER 50KG%' OR Description LIKE '%ELGON THAB
   AND Qty_Agri = Qty_Fin
   AND Qty_Agri > 0
 ORDER BY Region_Name, Sector_Name, Field_Number, NO_OF_PGIs
-LIMIT 1000
 """
-
 
 def main():
     if not PARQUET_PATH.exists():
@@ -68,7 +66,6 @@ def main():
     out_csv = Path(__file__).parent / "data" / "demo_fertilizer_approval.csv"
     result.to_csv(out_csv, index=False)
     print(f"full result saved to {out_csv}")
-
 
 if __name__ == "__main__":
     main()
