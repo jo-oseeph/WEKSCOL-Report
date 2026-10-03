@@ -1,0 +1,29 @@
+name: Test demo query against parquet
+
+on:
+  workflow_dispatch: {}   # manual "Run workflow" button - click this to see the demo results
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: reports/parquet-etl
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python deps
+        run: pip install duckdb pandas
+
+      - name: Run demo query
+        run: python run_demo_query.py
+
+      - name: Upload result as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-fertilizer-approval
+          path: reports/parquet-etl/data/demo_fertilizer_approval.csv

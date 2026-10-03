@@ -66,20 +66,25 @@ function CategoryTabs({
 
             {/* Opens below the category on hover */}
             <ul className="subcategory-dropdown">
-              {category.subcategories.map((subcategory) => (
-                <li className="subcategory-item" key={subcategory.id}>
-                  <button
-                    type="button"
-                    className={
-                      "subcategory-trigger" +
-                      (selectedSubcategory?.id === subcategory.id
-                        ? " subcategory-trigger-active"
-                        : "")
-                    }
-                  >
-                    {subcategory.name}
-                    <ChevronRight />
-                  </button>
+              {category.subcategories.length === 0 ? (
+                <li className="category-empty-state">
+                  No reports available for this category.
+                </li>
+              ) : (
+                category.subcategories.map((subcategory) => (
+                  <li className="subcategory-item" key={subcategory.id}>
+                    <button
+                      type="button"
+                      className={
+                        "subcategory-trigger"+
+                        (selectedSubcategory?.id === subcategory.id
+                          ? " subcategory-trigger-active"
+                          : "")
+                      }
+                    >
+                      {subcategory.name}
+                      <ChevronRight />
+                    </button>
 
                   {subcategory.groups?.length ? (
                     <ul className="group-flyout">
