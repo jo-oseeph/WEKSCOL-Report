@@ -10,7 +10,7 @@ import { reports as reportsApi } from "../api/api.js";
 import "../styles/Reports.css";
 
 function Reports() {
-  const { categoryId, subcategoryId, reportId } = useParams();
+  const { categoryId, subcategoryId, groupId, reportId } = useParams();
   const navigate = useNavigate();
   const { user, logout, updateProfile, changePassword } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -93,8 +93,10 @@ function Reports() {
     selectedCategory?.subcategories.find(
       (subcategory) => subcategory.id === subcategoryId,
     ) || null;
+  const selectedGroup =
+    selectedSubcategory?.groups?.find((group) => group.id === groupId) || null;
   const selectedReport =
-    selectedSubcategory?.reports.find((report) => report.id === reportId) ||
+    (selectedGroup?.reports || selectedSubcategory?.reports || []).find((report) => report.id === reportId) ||
     null;
 
   useEffect(() => {
@@ -105,8 +107,12 @@ function Reports() {
     });
   }, [selectedReport]);
 
-  function handleSelectReport(category, subcategory, report) {
-    navigate(`/reports/${category.id}/${subcategory.id}/${report.id}`);
+  function handleSelectReport(category, subcategory, groupOrReport, maybeReport) {
+    if (maybeReport) {
+      navigate(`/reports/${category.id}/${subcategory.id}/${groupOrReport.id}/${maybeReport.id}`);
+      return;
+    }
+    navigate(`/reports/${category.id}/${subcategory.id}/${groupOrReport.id}`);
   }
 
   async function handlePasswordSubmit(event) {
@@ -162,6 +168,7 @@ function Reports() {
               categories={reportCategories}
               selectedCategory={selectedCategory}
               selectedSubcategory={selectedSubcategory}
+              selectedGroup={selectedGroup}
               selectedReport={selectedReport}
               onSelectReport={handleSelectReport}
             />

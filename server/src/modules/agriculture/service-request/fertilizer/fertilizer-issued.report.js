@@ -1,0 +1,21 @@
+export default {
+  id: "fertilizer-issued",
+  name: "Fertilizer Request Issued",
+  description: "Fertilizer service requests with a positive delivered quantity.",
+  categoryId: "agriculture",
+  subcategoryId: "service-request",
+  groupId: "fertilizer",
+  order: 3,
+  queryModule: "service-request",
+  variants: ["detailed", "summary"],
+  variantLabels: { detailed: "Detailed Report", summary: "Summary Report" },
+  summaryGroups: ["unit", "sector", "zone", "section"],
+  params: [
+    { name: "unit", type: "string", sql: "Unit = @unit" },
+    { name: "sector", type: "string", sql: "Sector_Name = @sector" },
+    { name: "zone", type: "string", sql: "Zone_Name = @zone" },
+    { name: "section", type: "string", sql: "Section_Name = @section" },
+    { name: "dateFrom", type: "date", sql: "Min_Created_On >= @dateFrom" },
+    { name: "dateTo", type: "date", sql: "Min_Created_On < DATEADD(DAY, 1, @dateTo)" },
+  ],
+};
