@@ -45,8 +45,6 @@ SELECT
       ,Is_Company
 FROM read_parquet(?)
 WHERE (
-       # Description LIKE '%TSP FERTILIZER 50KG%' 
-       # OR Description LIKE '%ELGON THABITI TOP DRESSING 50KG%' OR 
 Description LIKE '%MAVUNO TOP DRESSING FERT 50KG%')  
   AND Qty_Agri IS NOT NULL
   AND Qty_Fin IS NOT NULL
