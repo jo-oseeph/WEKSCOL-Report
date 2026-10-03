@@ -61,11 +61,8 @@ def main():
     result = con.execute(DEMO_SQL, [str(PARQUET_PATH)]).df()
 
     print(f"{len(result)} rows returned")
-    print(result.head(20).to_string())
+    print(result.head(50).to_string())
 
-    out_csv = Path(__file__).parent / "data" / "demo_fertilizer_approval.csv"
-    result.to_csv(out_csv, index=False)
-    print(f"full result saved to {out_csv}")
 
 if __name__ == "__main__":
     main()
