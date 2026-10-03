@@ -245,12 +245,12 @@ def main():
         cursor.execute(stmt)
 
     print("running final select...")
-    df = pd.read_sql(FINAL_SQL, conn)
+    data = pd.read_sql(FINAL_SQL, conn)
 
     conn.close()
 
     OUT_PARQUET.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(OUT_PARQUET, index=False)
+    data.to_parquet(OUT_PARQUET, index=False)
     print(f"wrote {len(df):,} rows to {OUT_PARQUET}")
 
 
