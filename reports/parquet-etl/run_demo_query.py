@@ -44,7 +44,7 @@ SELECT
       ,Is_Synch
       ,Is_Company
 FROM read_parquet(?)
-WHERE Description LIKE '%FERTILIZER%'
+WHERE (Description LIKE '%TSP FERTILIZER 50KG%' OR Description LIKE '%ELGON THABITI TOP DRESSING 50KG%')  
   AND Qty_Agri IS NOT NULL
   AND Qty_Fin IS NOT NULL
   AND Qty_Agri = Qty_Fin
