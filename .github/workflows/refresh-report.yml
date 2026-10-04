@@ -1,9 +1,9 @@
 name: Refresh report parquet
 
 on:
-  workflow_dispatch: {}   # manual "Run workflow" button - use this first to test SQL Server is reachable
+  workflow_dispatch: {}
   schedule:
-    - cron: "*/30 5-15 * * 1-6"   # every 30 min, 8am-6pm EAT, Mon-Sat - tune once reachability + minutes budget are confirmed
+    - cron: "0 */6 * * 1-6"
 
 permissions:
   contents: write   # the default GITHUB_TOKEN is read-only unless this is set, which is why the push 403'd

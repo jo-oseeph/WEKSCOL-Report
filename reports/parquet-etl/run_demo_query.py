@@ -7,7 +7,8 @@ queryable and fast - it does NOT touch SQL Server.
 from pathlib import Path
 import duckdb
 
-PARQUET_PATH = Path(__file__).parent / "data" / "report_base.parquet"
+# PARQUET_PATH = Path(__file__).parent / "data" / "report_base.parquet"
+PARQUET_PATH = Path(__file__).resolve().parents[2] / "reports" / "parquet-etl" / "data" / "report_base.parquet"
 
 DEMO_SQL = """
 SELECT
@@ -44,15 +45,13 @@ SELECT
       ,Is_Synch
       ,Is_Company
 FROM read_parquet(?)
-WHERE Description LIKE '%FERTILIZER%'
+WHERE (Description LIKE '%TSP FERTILIZER 50KG%' OR Description LIKE '%ELGON THABITI TOP DRESSING 50KG%' OR Description LIKE '%MAVUNO TOP DRESSING FERT 50KG%')  
   AND Qty_Agri IS NOT NULL
   AND Qty_Fin IS NOT NULL
   AND Qty_Agri = Qty_Fin
   AND Qty_Agri > 0
 ORDER BY Region_Name, Sector_Name, Field_Number, NO_OF_PGIs
-LIMIT 1000
 """
-
 
 def main():
     if not PARQUET_PATH.exists():
@@ -62,11 +61,7 @@ def main():
     result = con.execute(DEMO_SQL, [str(PARQUET_PATH)]).df()
 
     print(f"{len(result)} rows returned")
-    print(result.head(20).to_string())
-
-    out_csv = Path(__file__).parent / "data" / "demo_fertilizer_approval.csv"
-    result.to_csv(out_csv, index=False)
-    print(f"full result saved to {out_csv}")
+    print(result.head(50).to_string())
 
 
 if __name__ == "__main__":
