@@ -8,7 +8,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: refresh-report-parquet
+  group: fertilizer-qc-refresh
   cancel-in-progress: true
 
 jobs:
