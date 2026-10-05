@@ -166,19 +166,35 @@ SELECT
       ,B.Region_Name
       ,CASE
            WHEN B.Region_Name = 'KABRAS CENTRAL' THEN
-               CASE WHEN B.Zone_Name IN ('CENTRAL ZONE-B','EASTERN ZONE') THEN 'KABRAS B' ELSE 'KABRAS A' END
-           WHEN B.Region_Name IN ('MISIKHU','NAITIRI','KITALE','BUSIA','NZOIA','MAGUT','BUTERE') THEN B.Region_Name
-           WHEN B.Region_Name IN ('MOI UNIVERSITY','TURBO') THEN 'SELIA'
-           WHEN B.Region_Name IN ('DOROFU','DOROFU KHALABA') THEN 'KHALABA'
-           WHEN B.Region_Name IN ('KABRAS WEST','KABRAS NORTH') THEN 'KABRAS A'
-           WHEN B.Region_Name IN ('KAKAMEGA','BUKURA','KABRAS SOUTH','KAIMOSI','KABRAS') THEN 'KABRAS B'
-           WHEN B.Region_Name = 'SIAYA' THEN 'LAKE AGRO'
-           WHEN B.Region_Name IN ('MIWANI','KERICHO','CHEMELIL') THEN 'NYANDO'
-           WHEN B.Region_Name = 'Eastern' THEN 'Eastern'
-           WHEN B.Region_Name = 'Northern' THEN 'Northern'
-           WHEN B.Region_Name = 'Southern' THEN 'Southern'
-           WHEN B.Region_Name = 'Western' THEN 'Western'
-           WHEN B.Region_Name = 'Central' THEN 'Nzoia Nucleus'
+               CASE
+                   WHEN B.Zone_Name IN ('CENTRAL ZONE-B','EASTERN ZONE')
+                       THEN 'KABRAS B'
+                   ELSE 'KABRAS A'
+               END
+           WHEN B.Region_Name IN ('MISIKHU','NAITIRI','KITALE','BUSIA','NZOIA','MAGUT','BUTERE')
+               THEN B.Region_Name
+           WHEN B.Region_Name IN ('MOI UNIVERSITY','TURBO')
+               THEN 'SELIA'
+           WHEN B.Region_Name IN ('DOROFU','DOROFU KHALABA')
+               THEN 'KHALABA'
+           WHEN B.Region_Name IN ('KABRAS WEST','KABRAS NORTH')
+               THEN 'KABRAS A'
+           WHEN B.Region_Name IN ('KAKAMEGA','BUKURA','KABRAS SOUTH','KAIMOSI','KABRAS')
+               THEN 'KABRAS B'
+           WHEN B.Region_Name = 'SIAYA'
+               THEN 'LAKE AGRO'
+           WHEN B.Region_Name IN ('MIWANI','KERICHO','CHEMELIL')
+               THEN 'NYANDO'
+           WHEN B.Region_Name = 'Eastern'
+               THEN 'Eastern'
+           WHEN B.Region_Name = 'Northern'
+               THEN 'Northern'
+           WHEN B.Region_Name = 'Southern'
+               THEN 'Southern'
+           WHEN B.Region_Name = 'Western'
+               THEN 'Western'
+           WHEN B.Region_Name = 'Central'
+               THEN 'Nzoia Nucleus'
            ELSE 'NOT MAPPED'
        END AS Sector_Name
       ,B.Zone_Name
@@ -186,34 +202,27 @@ SELECT
       ,B.SubLocation
       ,B.Unit_name
       ,B.Village_Name
-      ,CASE
-           WHEN B.Qty_Fin > 0 THEN 'Finance Approved'
-           WHEN B.Qty_Agri > 0 THEN 'Agri Approved'
-           WHEN B.Qty_Fin = 0 AND B.Qty_Agri > 0 THEN 'Pending Finance Approval'
-           WHEN B.Qty_Agri = 0 THEN 'Pending Agriculture Approval'
-           ELSE 'Pending'
-       END AS [Approval Status]
       ,B.Measured_Cane_Area
-      ,1 AS No_of_SR
       ,B.Qty_Requested
       ,B.Qty_Agri
       ,B.Qty_Fin
       ,P.Qty_Allocated
       ,P.Qty_Delivered
-      ,P.NO_OF_PGIs
       ,B.Qty_Requested - ISNULL(P.Qty_Delivered,0) AS Qty_Pending
       ,DATEDIFF(DAY,B.Created_On,GETDATE()) AS Ageing_Days
-      ,B.Created_On AS Min_Created_On
       ,B.Created_On AS Max_Created_On
       ,B.Current_Crop_Cycle
-      ,B.Planned_Date_Of_PC_Ratoon
       ,B.Actual_Date_Of_Plant_Ratoon
       ,B.Contract_Number
-      ,B.Is_Synch
-      ,B.Is_Company
 FROM #BASE B
-LEFT JOIN #PGI P ON B.Process_Order_Material_ID = P.Process_Order_Material_ID
-ORDER BY B.Region_Name, Sector_Name, B.Field_Number, B.Process_Order_Material_ID, P.GoodsID
+LEFT JOIN #PGI P
+    ON B.Process_Order_Material_ID = P.Process_Order_Material_ID
+ORDER BY
+       B.Region_Name
+      ,Sector_Name
+      ,B.Field_Number
+      ,B.Process_Order_Material_ID
+      ,P.GoodsID
 OPTION (RECOMPILE);
 """
 
