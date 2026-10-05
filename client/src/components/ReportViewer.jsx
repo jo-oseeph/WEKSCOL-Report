@@ -22,9 +22,12 @@ function ReportViewer({ report }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [caneType, setCaneType] = useState("all");
+  const isServiceRequest = report.queryModule === "service-request";
 
   useEffect(() => {
-    const source = ["cane-supply", "daily-weighment"].includes(report.id)
+    const source = isServiceRequest
+      ? "investment"
+      : ["cane-supply", "daily-weighment"].includes(report.id)
       ? "harvesting"
       : report.id === "overdue" ? "investment" : undefined;
     const params = source ? { source } : undefined;
@@ -35,15 +38,15 @@ function ReportViewer({ report }) {
         setCaneTypes(data.caneTypes || []);
       })
       .catch((requestError) => setError(requestError.message));
-  }, [report.id]);
+  }, [report.id, isServiceRequest]);
 
   const query = useMemo(() => {
     const [first, second, zone, section] = locationSelection;
-    if (["cane-supply", "daily-weighment", "overdue"].includes(report.id)) {
+    if (isServiceRequest || ["cane-supply", "daily-weighment", "overdue"].includes(report.id)) {
       return { unit: first, sector: second, zone, section, caneType, dateFrom, dateTo };
     }
     return { plant: first, region: second, zone, section, dateFrom, dateTo };
-  }, [locationSelection, caneType, dateFrom, dateTo, report.id]);
+  }, [locationSelection, caneType, dateFrom, dateTo, report.id, isServiceRequest]);
 
   // Strips "all"/empty values so they are not sent to the backend as filters.
   const cleanParams = useMemo(() => {
@@ -54,7 +57,7 @@ function ReportViewer({ report }) {
     return params;
   }, [query]);
 
-  const isHarvesting = ["cane-supply", "daily-weighment", "overdue"].includes(report.id);
+  const isHarvesting = isServiceRequest || ["cane-supply", "daily-weighment", "overdue"].includes(report.id);
   const filterLocations = locations;
 
   async function loadReport(variant = "detailed") {

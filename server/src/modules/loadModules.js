@@ -26,39 +26,51 @@ async function buildCatalog() {
   const modules = await files(root);
   const categories = new Map();
   const subcategories = new Map();
+  const groups = new Map();
   const reports = new Map();
 
-  for (const file of modules.filter((item) => /\.(category|subcategory|report)\.js$/.test(item))) {
+  for (const file of modules.filter((item) => /\.(category|subcategory|group|report)\.js$/.test(item))) {
     const definition = (await import(pathToFileURL(file))).default;
-
     if (file.includes(".category.")) {
       categories.set(definition.id, { ...definition, subcategories: [] });
     } else if (file.includes(".subcategory.")) {
-      subcategories.set(definition.id, { ...definition, reports: [] });
+      subcategories.set(definition.id, { ...definition, reports: [], groups: [] });
+    } else if (file.includes(".group.")) {
+      groups.set(definition.id, { ...definition, reports: [] });
     } else {
       reports.set(definition.id, definition);
     }
   }
 
+  for (const group of groups.values()) {
+    subcategories.get(group.subcategoryId)?.groups.push(group);
+  }
+
   for (const subcategory of subcategories.values()) {
-    const category = categories.get(subcategory.categoryId);
-    if (category) category.subcategories.push(subcategory);
+    categories.get(subcategory.categoryId)?.subcategories.push(subcategory);
   }
 
   for (const category of categories.values()) {
-    category.subcategories.sort(
-      (left, right) => (left.order || 0) - (right.order || 0),
-    );
+    category.subcategories.sort((left, right) => (left.order || 0) - (right.order || 0));
+  }
+
+  for (const subcategory of subcategories.values()) {
+    subcategory.groups.sort((left, right) => (left.order || 0) - (right.order || 0));
   }
 
   for (const report of reports.values()) {
-    subcategories.get(report.subcategoryId)?.reports.push(report);
+    const subcategory = subcategories.get(report.subcategoryId);
+    if (!subcategory) continue;
+    if (report.groupId && groups.has(report.groupId)) {
+      groups.get(report.groupId).reports.push(report);
+    } else {
+      subcategory.reports.push(report);
+    }
   }
 
-  return {
-    categories: [...categories.values()].sort(
-      (left, right) => (left.order || 0) - (right.order || 0),
-    ),
-    reports,
-  };
+  for (const group of groups.values()) {
+    group.reports.sort((left, right) => (left.order || 0) - (right.order || 0));
+  }
+
+  return { categories: [...categories.values()], reports };
 }

@@ -17,6 +17,8 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/reports" element={<Reports />} />
         <Route path="/dashboard" element={<Reports />} />
+        <Route path="/reports/:categoryId/:subcategoryId/:groupId/:reportId" element={<Reports />} />
+        <Route path="/:categoryId/:subcategoryId/:groupId/:reportId" element={<Reports />} />
         <Route path="/reports/:categoryId/:subcategoryId/:reportId" element={<Reports />} />
         <Route path="/:categoryId/:subcategoryId/:reportId" element={<Reports />} />
       </Route>
