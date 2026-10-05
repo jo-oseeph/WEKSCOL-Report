@@ -1,4 +1,4 @@
-name: Refresh report parquet
+name: Refresh Fertilizer QC
 
 on:
   workflow_dispatch: {}
