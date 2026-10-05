@@ -33,7 +33,7 @@ SELECT
 INTO #FERT
 FROM DT_SERVICE_REQUEST_MATERIAL A
 WHERE
-      A.Created_On >= '20260101'
+      A.Created_On >= '20250101'
   AND A.Is_Active = 1;
 
 CREATE CLUSTERED INDEX IX_FERT_HEADER ON #FERT (SERVICE_REQUEST_HEADER_ID);
@@ -147,7 +147,7 @@ INTO #PGI
 FROM DT_GoodsIssue_PO P
 INNER JOIN (SELECT DISTINCT Process_Order_Material_ID FROM #BASE WHERE Process_Order_Material_ID IS NOT NULL) X
     ON P.Process_Order_Material_ID = X.Process_Order_Material_ID
-WHERE P.CreatedON >= '20260101';
+WHERE P.CreatedON >= '20250101';
 
 CREATE CLUSTERED INDEX IX_PGI_POM ON #PGI (Process_Order_Material_ID);
 CREATE INDEX IX_PGI_GOODSID ON #PGI (GoodsID);
@@ -245,13 +245,13 @@ def main():
         cursor.execute(stmt)
 
     print("running final select...")
-    data = pd.read_sql(FINAL_SQL, conn)
+    df = pd.read_sql(FINAL_SQL, conn)
 
     conn.close()
 
     OUT_PARQUET.parent.mkdir(parents=True, exist_ok=True)
-    data.to_parquet(OUT_PARQUET, index=False)
-    print(f"wrote {len(data):,} rows to {OUT_PARQUET}")
+    df.to_parquet(OUT_PARQUET, index=False)
+    print(f"wrote {len(df):,} rows to {OUT_PARQUET}")
 
 
 if __name__ == "__main__":
