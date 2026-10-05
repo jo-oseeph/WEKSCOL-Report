@@ -1,0 +1,30 @@
+name: Test Fertilizer QC Demo
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: reports/parquet-etl
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install duckdb pandas
+
+      - name: Run fertilizer QC demo
+        run: python fertilizer_qc_demo.py
