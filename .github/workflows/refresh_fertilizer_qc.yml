@@ -55,7 +55,7 @@ jobs:
         run: |
           git config user.name "adrianjuliusaluoch"
           git config user.email "adrianjuliusaluoch@gmail.com"
-          git add data/report_base.parquet
+          git add data/fertilizer_issuance_validation.parquet
           git diff --cached --quiet || git commit -m "refresh report data"
           git push
 
