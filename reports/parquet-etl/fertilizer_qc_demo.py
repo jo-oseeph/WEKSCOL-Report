@@ -13,7 +13,7 @@ import duckdb
 
 
 PARQUET_PATH = (
-    Path(__file__).resolve().parents[1]
+    Path(__file__).resolve().parent
     / "data"
     / "fertilizer_issuance_validation.parquet"
 )
