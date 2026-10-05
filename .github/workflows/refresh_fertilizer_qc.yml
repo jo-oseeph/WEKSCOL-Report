@@ -1,0 +1,81 @@
+name: Refresh report parquet
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: refresh-report-parquet
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: reports/parquet-etl
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install SQL Server ODBC driver
+        run: |
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
+          curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update
+          ACCEPT_EULA=Y sudo apt-get install -y msodbcsql18 unixodbc-dev
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Run extraction
+        uses: nick-fields/retry@v3
+        env:
+          SQL_SERVER: ${{ secrets.SQL_SERVER }}
+          SQL_DATABASE: ${{ secrets.SQL_DATABASE }}
+          SQL_USERNAME: ${{ secrets.SQL_USERNAME }}
+          SQL_PASSWORD: ${{ secrets.SQL_PASSWORD }}
+        with:
+          timeout_minutes: 10
+          max_attempts: 2
+          retry_wait_seconds: 30
+          retry_on: error
+          command: python reports/parquet-etl/fertilizer_qc.py
+
+      - name: Commit updated parquet
+        run: |
+          git config user.name "adrianjuliusaluoch"
+          git config user.email "adrianjuliusaluoch@gmail.com"
+          git add data/report_base.parquet
+          git diff --cached --quiet || git commit -m "refresh report data"
+          git push
+
+      - name: Open issue on failure
+        if: ${{ failure() && !cancelled() }}
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ secrets.ISSUE_PAT }}
+        run: |
+          gh issue create \
+            --title "Report parquet refresh failed - Run #${{ github.run_number }}" \
+            --body "## Report parquet refresh failed
+
+          The report parquet refresh workflow failed after the retry attempt.
+
+          **Workflow:** ${{ github.workflow }}
+          **Run:** #${{ github.run_number }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+
+          [View failed workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+          Please investigate the failed step and rerun the workflow after fixing the issue."
