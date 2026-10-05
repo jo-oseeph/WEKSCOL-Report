@@ -1,7 +1,7 @@
 export default {
-  id: "fertilizer-pending",
-  name: "Fertilizer Pending Approval",
-  description: "Fertilizer service requests pending agriculture or finance approval.",
+  id: "fertilizer-requests",
+  name: "Fertilizer Requests",
+  description: "All fertilizer service requests in the Parquet report dataset.",
   categoryId: "agriculture",
   subcategoryId: "service-request",
   groupId: "fertilizer",
@@ -16,7 +16,7 @@ export default {
     { name: "sector", type: "string", sql: "Sector_Name = @sector" },
     { name: "zone", type: "string", sql: "Zone_Name = @zone" },
     { name: "section", type: "string", sql: "Section_Name = @section" },
-    { name: "dateFrom", type: "date", sql: "Min_Created_On >= @dateFrom" },
-    { name: "dateTo", type: "date", sql: "Min_Created_On < DATEADD(DAY, 1, @dateTo)" },
+    { name: "dateFrom", type: "date", sql: "Max_Created_On >= @dateFrom" },
+    { name: "dateTo", type: "date", sql: "Max_Created_On < DATEADD(DAY, 1, @dateTo)" },
   ],
 };
