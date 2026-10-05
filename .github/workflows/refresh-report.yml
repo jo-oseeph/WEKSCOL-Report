@@ -2,18 +2,24 @@ name: Refresh report parquet
 
 on:
   workflow_dispatch: {}
-  schedule:
-    - cron: "0 */6 * * 1-6"
 
 permissions:
-  contents: write   # the default GITHUB_TOKEN is read-only unless this is set, which is why the push 403'd
+  contents: write
+  issues: write
+
+concurrency:
+  group: refresh-report-parquet
+  cancel-in-progress: true
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     defaults:
       run:
         working-directory: reports/parquet-etl
+
     steps:
       - uses: actions/checkout@v4
 
@@ -32,12 +38,18 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run extraction
+        uses: nick-fields/retry@v3
         env:
           SQL_SERVER: ${{ secrets.SQL_SERVER }}
           SQL_DATABASE: ${{ secrets.SQL_DATABASE }}
           SQL_USERNAME: ${{ secrets.SQL_USERNAME }}
           SQL_PASSWORD: ${{ secrets.SQL_PASSWORD }}
-        run: python extract_to_parquet.py
+        with:
+          timeout_minutes: 5
+          max_attempts: 2
+          retry_wait_seconds: 30
+          retry_on: error
+          command: python extract_to_parquet.py
 
       - name: Commit updated parquet
         run: |
@@ -46,3 +58,24 @@ jobs:
           git add data/report_base.parquet
           git diff --cached --quiet || git commit -m "refresh report data"
           git push
+
+      - name: Open issue on failure
+        if: ${{ failure() && !cancelled() }}
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ secrets.ISSUE_PAT }}
+        run: |
+          gh issue create \
+            --title "Report parquet refresh failed - Run #${{ github.run_number }}" \
+            --body "## Report parquet refresh failed
+
+          The report parquet refresh workflow failed after the retry attempt.
+
+          **Workflow:** ${{ github.workflow }}
+          **Run:** #${{ github.run_number }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+
+          [View failed workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+          Please investigate the failed step and rerun the workflow after fixing the issue."
