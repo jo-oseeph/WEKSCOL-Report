@@ -7,6 +7,7 @@ export default {
   groupId: "fertilizer",
   order: 1,
   queryModule: "service-request",
+  backend: "parquet",
   variants: ["detailed", "summary"],
   variantLabels: { detailed: "Detailed Report", summary: "Summary Report" },
   summaryGroups: ["unit", "sector", "zone", "section"],

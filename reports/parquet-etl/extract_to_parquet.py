@@ -251,7 +251,7 @@ def main():
 
     OUT_PARQUET.parent.mkdir(parents=True, exist_ok=True)
     data.to_parquet(OUT_PARQUET, index=False)
-    print(f"wrote {len(df):,} rows to {OUT_PARQUET}")
+    print(f"wrote {len(data):,} rows to {OUT_PARQUET}")
 
 
 if __name__ == "__main__":

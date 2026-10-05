@@ -127,6 +127,14 @@
   transform: translateY(0);
 }
 
+.subcategory-dropdown.menu-panel-open,
+.group-flyout.menu-panel-open,
+.report-flyout.menu-panel-open {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(0);
+}
+
 .category-empty-state {
   padding: 11px 12px;
   color: var(--color-text-muted);

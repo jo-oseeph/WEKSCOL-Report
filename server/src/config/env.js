@@ -23,6 +23,7 @@ export default function loadConfig() {
     port: Number(process.env.PORT || 3001),
     databaseUrl: process.env.DATABASE_URL || "",
     databaseUrlUnpooled: process.env.DATABASE_URL_UNPOOLED || "",
+    parquetPath: process.env.PARQUET_REPORT_PATH || path.join(root, "reports", "parquet-etl", "data", "report_base.parquet"),
     clientUrls,
     clientUrl: clientUrls.find((url) => !url.includes("localhost")) || clientUrls[0],
     warehouse: {

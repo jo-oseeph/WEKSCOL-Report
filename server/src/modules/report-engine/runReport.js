@@ -6,6 +6,7 @@ import { httpError } from "../../shared/errors.js";
 import { runInvestmentQuery } from "../agriculture/investment/investment.query.js";
 import { runHarvestingQuery } from "../agriculture/harvesting/harvesting.query.js";
 import { runServiceRequestQuery } from "../agriculture/service-request/service-request.query.js";
+import { runParquetReport } from "./runParquetReport.js";
 
 export default async function runReport(reportId, query = {}) {
   const { reports } = await loadModules();
@@ -13,20 +14,29 @@ export default async function runReport(reportId, query = {}) {
   if (!definition) throw httpError("Report not found.", 404);
 
   const { variant, group } = resolveVariant(definition, query);
-  const filters = buildFilters(definition, query);
+  let filters = { parameters: {} };
+  let result;
+  if (definition.backend === "parquet") {
+    result = await runParquetReport({ reportId, variant, group, query });
+    filters = { parameters: result.parameters };
+  } else {
+    filters = buildFilters(definition, query);
+  }
   const queryRunners = {
     harvesting: runHarvestingQuery,
     investment: runInvestmentQuery,
     "service-request": runServiceRequestQuery,
   };
   const queryRunner = queryRunners[definition.queryModule] || runInvestmentQuery;
-  const result = await queryRunner({
-    reportId,
-    variant,
-    group,
-    clauses: filters.clauses,
-    parameters: filters.parameters,
-  });
+  if (definition.backend !== "parquet") {
+    result = await queryRunner({
+      reportId,
+      variant,
+      group,
+      clauses: filters.clauses,
+      parameters: filters.parameters,
+    });
+  }
   const rows = normalizeRows(result.rows);
   const monthSource = query.dateFrom || new Date().toISOString().slice(0, 10);
   const monthLabel = definition.id === "cane-supply"
