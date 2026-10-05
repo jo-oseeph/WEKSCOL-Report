@@ -1,7 +1,7 @@
 export default {
-  id: "fertilizer-approved",
-  name: "Fertilizer Request Approved",
-  description: "Fully approved fertilizer service requests.",
+  id: "fertilizer-pending-agriculture",
+  name: "Fertilizer Pending Agriculture Approval",
+  description: "Fertilizer service requests awaiting agriculture approval.",
   categoryId: "agriculture",
   subcategoryId: "service-request",
   groupId: "fertilizer",

@@ -2,8 +2,10 @@ import { executeParquetQuery } from "../../db/parquetDb/connection.js";
 import { httpError } from "../../shared/errors.js";
 
 const FERTILIZER_REPORTS = {
-  "fertilizer-pending": "pending",
-  "fertilizer-approved": "approved",
+  "fertilizer-requests": "requests",
+  "fertilizer-pending-agriculture": "pending-agriculture",
+  "fertilizer-pending-finance": "pending-finance",
+  "fertilizer-pending-issuance": "pending-issuance",
   "fertilizer-issued": "issued",
 };
 
@@ -27,6 +29,21 @@ function addFilter(clauses, parameters, column, value, operator = "=") {
   parameters.push(value);
 }
 
+function isDateOnly(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year
+    && date.getUTCMonth() === month - 1
+    && date.getUTCDate() === day;
+}
+
+function nextDateOnly(value) {
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
 // Build the shared location and date filters used by all fertilizer variants.
 function buildParquetFilters(query) {
   const clauses = [FERTILIZER_FILTER];
@@ -36,23 +53,32 @@ function buildParquetFilters(query) {
   addFilter(clauses, parameters, "Sector_Name", query.sector);
   addFilter(clauses, parameters, "Zone_Name", query.zone);
   addFilter(clauses, parameters, "Section_Name", query.section);
-  addFilter(clauses, parameters, "Min_Created_On", query.dateFrom, ">=");
-  addFilter(clauses, parameters, "Min_Created_On", query.dateTo, "<");
 
-  if (query.dateTo !== undefined && query.dateTo !== "" && query.dateTo !== "all") {
-    parameters[parameters.length - 1] = `${query.dateTo}T23:59:59.999Z`;
+  const dateFrom = query.dateFrom && query.dateFrom !== "all" ? query.dateFrom : undefined;
+  const dateTo = query.dateTo && query.dateTo !== "all" ? query.dateTo : undefined;
+  if (dateFrom && !isDateOnly(dateFrom)) {
+    throw httpError("dateFrom must be a valid date in YYYY-MM-DD format.", 400);
   }
+  if (dateTo && !isDateOnly(dateTo)) {
+    throw httpError("dateTo must be a valid date in YYYY-MM-DD format.", 400);
+  }
+  if (dateFrom && dateTo && dateFrom > dateTo) {
+    throw httpError("dateFrom cannot be after dateTo.", 400);
+  }
+  addFilter(clauses, parameters, "Min_Created_On", dateFrom ? `${dateFrom}T00:00:00` : undefined, ">=");
+  addFilter(clauses, parameters, "Min_Created_On", dateTo ? `${nextDateOnly(dateTo)}T00:00:00` : undefined, "<");
 
   return { clauses, parameters };
 }
 
-// Build the report-specific approval or delivery predicate for fertilizer data.
+// Build the mutually exclusive report status predicate for fertilizer data.
 function statusFilter(status) {
-  if (status === "approved") {
-    return "Qty_Agri IS NOT NULL AND Qty_Fin IS NOT NULL AND Qty_Agri = Qty_Fin AND Qty_Agri > 0";
-  }
+  if (status === "requests") return "TRUE";
+  if (status === "pending-agriculture") return "COALESCE(Qty_Agri, 0) <= 0";
+  if (status === "pending-finance") return "Qty_Agri > 0 AND COALESCE(Qty_Fin, 0) <= 0";
+  if (status === "pending-issuance") return "Qty_Agri > 0 AND Qty_Fin > 0 AND COALESCE(Qty_Delivered, 0) <= 0";
   if (status === "issued") return "COALESCE(Qty_Delivered, 0) > 0";
-  return "Qty_Agri IS NULL OR Qty_Fin IS NULL";
+  throw httpError(`Unsupported fertilizer status: ${status}.`, 500);
 }
 
 // Build the detailed DuckDB query using the same columns returned by SQL reports.
@@ -72,10 +98,11 @@ function detailedQuery(status, filters) {
     Unit_name AS Unit,
     Village_Name,
     CASE
-      WHEN Qty_Fin > 0 AND Qty_Agri > 0 AND Qty_Fin = Qty_Agri THEN 'Finance Approved'
-      WHEN Qty_Agri > 0 AND (Qty_Fin IS NULL OR Qty_Fin = 0) THEN 'Agri Approved'
-      WHEN Qty_Agri IS NULL OR Qty_Agri = 0 THEN 'Pending Agriculture Approval'
-      ELSE 'Pending'
+      WHEN COALESCE(Qty_Delivered, 0) > 0 THEN 'Issued'
+      WHEN Qty_Agri > 0 AND Qty_Fin > 0 THEN 'Pending Issuance'
+      WHEN Qty_Agri > 0 AND COALESCE(Qty_Fin, 0) <= 0 THEN 'Pending Finance Approval'
+      WHEN COALESCE(Qty_Agri, 0) <= 0 THEN 'Pending Agriculture Approval'
+      ELSE 'Request'
     END AS "Approval Status",
     Measured_Cane_Area,
     No_of_SR,

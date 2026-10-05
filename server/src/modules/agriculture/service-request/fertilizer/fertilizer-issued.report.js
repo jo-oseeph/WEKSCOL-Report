@@ -1,11 +1,11 @@
 export default {
   id: "fertilizer-issued",
-  name: "Fertilizer Request Issued",
+  name: "Fertilizer Issued",
   description: "Fertilizer service requests with a positive delivered quantity.",
   categoryId: "agriculture",
   subcategoryId: "service-request",
   groupId: "fertilizer",
-  order: 3,
+  order: 5,
   queryModule: "service-request",
   backend: "parquet",
   variants: ["detailed", "summary"],
