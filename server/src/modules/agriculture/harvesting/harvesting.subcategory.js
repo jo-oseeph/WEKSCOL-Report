@@ -1,0 +1,1 @@
+export default {  id: "harvesting",  categoryId: "agriculture",  name: "Harvesting",  description: "Cane harvesting, weighment and cane supply reports.",  order: 1,};

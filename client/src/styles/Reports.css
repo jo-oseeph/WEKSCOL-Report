@@ -39,6 +39,7 @@
 .reports-navigation {
   display: flex;
   align-items: center;
+  gap: 4px;
   min-width: 0;
   justify-self: center;
 }
@@ -63,6 +64,22 @@
 }
 
 .reports-home-link:hover {
+  color: #fff;
+}
+
+.reports-admin-link {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  color: #d9eee0;
+  font-size: 12px;
+  font-weight: 700;
+  padding-right: 16px;
+  margin-right: 4px;
+  border-right: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.reports-admin-link:hover {
   color: #fff;
 }
 

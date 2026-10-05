@@ -22,28 +22,31 @@ function ReportViewer({ report }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [caneType, setCaneType] = useState("all");
+  const isServiceRequest = report.queryModule === "service-request";
 
   useEffect(() => {
-    const source = ["cane-supply", "daily-weighment"].includes(report.id)
+    const source = isServiceRequest
+      ? "investment"
+      : ["cane-supply", "daily-weighment"].includes(report.id)
       ? "harvesting"
       : report.id === "overdue" ? "investment" : undefined;
     const params = source ? { source } : undefined;
     reportsApi
-      .getFilters(params)
+      .getFilters(report.id, params)
       .then((data) => {
         setLocations(data.locations || []);
         setCaneTypes(data.caneTypes || []);
       })
       .catch((requestError) => setError(requestError.message));
-  }, [report.id]);
+  }, [report.id, isServiceRequest]);
 
   const query = useMemo(() => {
     const [first, second, zone, section] = locationSelection;
-    if (["cane-supply", "daily-weighment", "overdue"].includes(report.id)) {
+    if (isServiceRequest || ["cane-supply", "daily-weighment", "overdue"].includes(report.id)) {
       return { unit: first, sector: second, zone, section, caneType, dateFrom, dateTo };
     }
     return { plant: first, region: second, zone, section, dateFrom, dateTo };
-  }, [locationSelection, caneType, dateFrom, dateTo, report.id]);
+  }, [locationSelection, caneType, dateFrom, dateTo, report.id, isServiceRequest]);
 
   // Strips "all"/empty values so they are not sent to the backend as filters.
   const cleanParams = useMemo(() => {
@@ -54,7 +57,7 @@ function ReportViewer({ report }) {
     return params;
   }, [query]);
 
-  const isHarvesting = ["cane-supply", "daily-weighment", "overdue"].includes(report.id);
+  const isHarvesting = isServiceRequest || ["cane-supply", "daily-weighment", "overdue"].includes(report.id);
   const filterLocations = locations;
 
   async function loadReport(variant = "detailed") {
@@ -160,6 +163,7 @@ function ReportViewer({ report }) {
               The Daily Detailed report covers one full month at a time. Choose a Date From and Date To within the same month (or leave both blank for the current month).
             </p>
           ) : null}
+
         </div>
 
         <div className="report-filter-actions">
@@ -180,7 +184,8 @@ function ReportViewer({ report }) {
               {result.monthLabel ? <span className="report-results-month"> — {result.monthLabel}</span> : null}
             </h3>
             <div className="report-variant-tabs" role="tablist" aria-label="Report view">
-              {[{ id: "detailed", label: "Detailed Report" }, { id: "summary", label: "Summary Report" }].map((mode) => {
+              {(report.variants || ["detailed"]).map((variant) => {
+                const mode = { id: variant, label: report.variantLabels?.[variant] || variant.replaceAll("-", " ") };
                 const isActive = activeVariant === mode.id;
                 return (
                 <button
@@ -197,7 +202,7 @@ function ReportViewer({ report }) {
                 );
               })}
             </div>
-            {activeVariant === "summary" ? <span className="report-summary-group-label">Grouped to: {result.groupLabel || "Unit"}</span> : null}
+            {activeVariant !== "detailed" ? <span className="report-summary-group-label">Grouped to: {result.groupLabel || "Unit"}</span> : null}
           </div>
           <div className="report-results-toolbar">
             <span className="report-results-count">

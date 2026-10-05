@@ -1,0 +1,6 @@
+export default {
+  id: "agriculture",
+  name: "Agriculture",
+  description: "Field operations, farmer services and cane development reports.",
+  order: 1,
+};

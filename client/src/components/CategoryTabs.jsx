@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   FaIndustry,
   FaMoneyBillWave,
@@ -41,9 +41,32 @@ function CategoryTabs({
   categories,
   selectedCategory,
   selectedSubcategory,
+  selectedGroup,
   selectedReport,
   onSelectReport,
 }) {
+  const [openCategoryId, setOpenCategoryId] = useState(selectedCategory?.id || null);
+  const [openSubcategoryId, setOpenSubcategoryId] = useState(selectedSubcategory?.id || null);
+  const [openGroupId, setOpenGroupId] = useState(selectedGroup?.id || null);
+
+  // Toggle a top-level category so its subcategories can be opened without hover.
+  function toggleCategory(categoryId) {
+    setOpenCategoryId((current) => (current === categoryId ? null : categoryId));
+    setOpenSubcategoryId(null);
+    setOpenGroupId(null);
+  }
+
+  // Toggle a subcategory so its groups or direct reports can be opened on touch devices.
+  function toggleSubcategory(subcategoryId) {
+    setOpenSubcategoryId((current) => (current === subcategoryId ? null : subcategoryId));
+    setOpenGroupId(null);
+  }
+
+  // Toggle a report group so grouped fertilizer reports are visible without hover.
+  function toggleGroup(groupId) {
+    setOpenGroupId((current) => (current === groupId ? null : groupId));
+  }
+
   return (
     <nav className="category-menu">
       <ul className="category-menu-list">
@@ -57,6 +80,8 @@ function CategoryTabs({
                   ? " category-menu-trigger-active"
                   : "")
               }
+              aria-expanded={openCategoryId === category.id}
+              onClick={() => toggleCategory(category.id)}
             >
               <CategoryIcon categoryId={category.id} />
               {category.name}
@@ -64,45 +89,92 @@ function CategoryTabs({
             </button>
 
             {/* Opens below the category on hover */}
-            <ul className="subcategory-dropdown">
-              {category.subcategories.map((subcategory) => (
-                <li className="subcategory-item" key={subcategory.id}>
-                  <button
-                    type="button"
-                    className={
-                      "subcategory-trigger" +
-                      (selectedSubcategory?.id === subcategory.id
-                        ? " subcategory-trigger-active"
-                        : "")
-                    }
-                  >
-                    {subcategory.name}
-                    <ChevronRight />
-                  </button>
-
-                  {/* Opens to the side of the subcategory on hover */}
-                  <ul className="report-flyout">
-                    {subcategory.reports.map((report) => (
-                      <li key={report.id}>
-                        <button
-                          type="button"
-                          className={
-                            "report-flyout-item" +
-                            (selectedReport?.id === report.id
-                              ? " report-flyout-item-active"
-                              : "")
-                          }
-                          onClick={() =>
-                            onSelectReport(category, subcategory, report)
-                          }
-                        >
-                          {report.name}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+            <ul className={`subcategory-dropdown${openCategoryId === category.id ? " menu-panel-open" : ""}`}>
+              {category.subcategories.length === 0 ? (
+                <li className="category-empty-state">
+                  No reports available for this category.
                 </li>
-              ))}
+              ) : (
+                category.subcategories.map((subcategory) => (
+                  <li className="subcategory-item" key={subcategory.id}>
+                    <button
+                      type="button"
+                      className={
+                        "subcategory-trigger" +
+                        (selectedSubcategory?.id === subcategory.id
+                          ? " subcategory-trigger-active"
+                          : "")
+                      }
+                      aria-expanded={openSubcategoryId === subcategory.id}
+                      onClick={() => toggleSubcategory(subcategory.id)}
+                    >
+                      {subcategory.name}
+                      <ChevronRight />
+                    </button>
+
+                    {subcategory.groups?.length ? (
+                      <ul className={`group-flyout${openSubcategoryId === subcategory.id ? " menu-panel-open" : ""}`}>
+                        {subcategory.groups.map((group) => (
+                          <li className="group-item" key={group.id}>
+                            <button
+                              type="button"
+                              className={
+                                "group-trigger" +
+                                (selectedGroup?.id === group.id ? " group-trigger-active" : "")
+                              }
+                              aria-expanded={openGroupId === group.id}
+                              onClick={() => toggleGroup(group.id)}
+                            >
+                              {group.name}
+                              <ChevronRight />
+                            </button>
+                            <ul className={`report-flyout report-flyout-grouped${openGroupId === group.id ? " menu-panel-open" : ""}`}>
+                              {group.reports.map((report) => (
+                                <li key={report.id}>
+                                  <button
+                                    type="button"
+                                    className={
+                                      "report-flyout-item" +
+                                      (selectedReport?.id === report.id ? " report-flyout-item-active" : "")
+                                    }
+                                    onClick={() => onSelectReport(category, subcategory, group, report)}
+                                  >
+                                    {report.name}
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+
+                    {/* Existing reports remain at the original subcategory level. */}
+                    {subcategory.reports.length ? (
+                      <ul className={`report-flyout${openSubcategoryId === subcategory.id ? " menu-panel-open" : ""}`}>
+                        {subcategory.reports.map((report) => (
+                          <li key={report.id}>
+                            <button
+                              type="button"
+                              className={
+                                "report-flyout-item" +
+                                (selectedReport?.id === report.id
+                                  ? " report-flyout-item-active"
+                                  : "")
+                              }
+                              onClick={() =>
+                                onSelectReport(category, subcategory, report)
+                              }
+                            >
+                              {report.name}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </li>
+                ))
+              )}
             </ul>
           </li>
         ))}

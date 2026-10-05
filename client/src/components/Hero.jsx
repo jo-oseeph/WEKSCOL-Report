@@ -115,7 +115,7 @@ function Hero() {
   function handleRegistered(registeredEmail) {
     setPrefillUsername(registeredEmail);
     setMode("login");
-    setRegisterSuccessMessage("Account created. Sign in to access the reports.");
+    setRegisterSuccessMessage("Account created. Your account is awaiting administrator approval before you can access reports.");
   }
 
   return (

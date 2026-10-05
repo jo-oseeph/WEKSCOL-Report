@@ -487,6 +487,14 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
+.auth-password-field {
+  position: relative;
+}
+
+.auth-password-field input {
+  padding-right: 46px;
+}
+
 .auth-field input::placeholder {
   color: rgba(242, 251, 246, 0.5);
 }
@@ -496,6 +504,35 @@
   border-color: #5af0be;
   background: rgba(255, 255, 255, 0.1);
   box-shadow: 0 0 0 3px rgba(90, 240, 190, 0.18);
+}
+
+.auth-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: rgba(242, 251, 246, 0.68);
+  background: transparent;
+  transform: translateY(-50%);
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.auth-password-toggle:hover,
+.auth-password-toggle:focus-visible {
+  color: #5af0be;
+  background: rgba(90, 240, 190, 0.12);
+}
+
+.auth-password-toggle:focus-visible {
+  outline: 2px solid #5af0be;
+  outline-offset: 2px;
 }
 
 .auth-row {

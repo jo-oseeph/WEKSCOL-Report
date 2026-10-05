@@ -21,9 +21,3 @@ jobs:
 
       - name: Run demo query
         run: python run_demo_query.py
-
-      - name: Upload result as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: demo-fertilizer-approval
-          path: reports/parquet-etl/data/demo_fertilizer_approval.csv

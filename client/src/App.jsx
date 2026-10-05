@@ -5,6 +5,8 @@ import Reports from "./pages/Reports.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
+import Admin from "./pages/Admin.jsx";
+import AdminRoute from "./components/AdminRoute.jsx";
 
 function App() {
   return (
@@ -15,8 +17,13 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/reports" element={<Reports />} />
         <Route path="/dashboard" element={<Reports />} />
+        <Route path="/reports/:categoryId/:subcategoryId/:groupId/:reportId" element={<Reports />} />
+        <Route path="/:categoryId/:subcategoryId/:groupId/:reportId" element={<Reports />} />
         <Route path="/reports/:categoryId/:subcategoryId/:reportId" element={<Reports />} />
         <Route path="/:categoryId/:subcategoryId/:reportId" element={<Reports />} />
+      </Route>
+      <Route element={<AdminRoute />}>
+        <Route path="/admin" element={<Admin />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

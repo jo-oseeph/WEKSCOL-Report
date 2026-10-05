@@ -1,9 +1,12 @@
 name: Refresh report parquet
 
 on:
-  workflow_dispatch: {}   # manual "Run workflow" button - use this first to test SQL Server is reachable
+  workflow_dispatch: {}
   schedule:
-    - cron: "*/30 5-15 * * 1-6"   # every 30 min, 8am-6pm EAT, Mon-Sat - tune once reachability + minutes budget are confirmed
+    - cron: "0 */6 * * 1-6"
+
+permissions:
+  contents: write   # the default GITHUB_TOKEN is read-only unless this is set, which is why the push 403'd
 
 jobs:
   refresh:
@@ -38,8 +41,8 @@ jobs:
 
       - name: Commit updated parquet
         run: |
-          git config user.name "report-bot"
-          git config user.email "report-bot@users.noreply.github.com"
+          git config user.name "adrianjuliusaluoch"
+          git config user.email "adrianjuliusaluoch@gmail.com"
           git add data/report_base.parquet
           git diff --cached --quiet || git commit -m "refresh report data"
           git push
