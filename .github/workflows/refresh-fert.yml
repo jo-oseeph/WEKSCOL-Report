@@ -1,4 +1,4 @@
-name: Refresh Fertlizer Data Updates
+name: Refresh Fertlizer Requests
 
 on:
   workflow_dispatch: {}
