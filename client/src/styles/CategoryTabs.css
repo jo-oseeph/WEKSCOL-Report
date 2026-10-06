@@ -135,6 +135,21 @@
   transform: translate(0);
 }
 
+/* Keep the navigation collapsed immediately after a report is selected. The
+   hover rules below intentionally reopen menus during normal navigation, so
+   this state needs stronger selectors while the pointer remains over the
+   selected report. */
+.category-menu.category-menu-selection-collapsed .subcategory-dropdown,
+.category-menu.category-menu-selection-collapsed .group-flyout,
+.category-menu.category-menu-selection-collapsed .report-flyout,
+.category-menu.category-menu-selection-collapsed .category-menu-item:hover > .subcategory-dropdown,
+.category-menu.category-menu-selection-collapsed .subcategory-item:hover > .group-flyout,
+.category-menu.category-menu-selection-collapsed .subcategory-item:hover > .report-flyout,
+.category-menu.category-menu-selection-collapsed .group-item:hover > .report-flyout {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 .category-empty-state {
   padding: 11px 12px;
   color: var(--color-text-muted);
@@ -310,5 +325,15 @@
   .subcategory-item:hover > .report-flyout,
   .subcategory-item:focus-within > .report-flyout {
     display: block;
+  }
+
+  .category-menu.category-menu-selection-collapsed .subcategory-dropdown,
+  .category-menu.category-menu-selection-collapsed .group-flyout,
+  .category-menu.category-menu-selection-collapsed .report-flyout,
+  .category-menu.category-menu-selection-collapsed .category-menu-item:hover > .subcategory-dropdown,
+  .category-menu.category-menu-selection-collapsed .subcategory-item:hover > .group-flyout,
+  .category-menu.category-menu-selection-collapsed .subcategory-item:hover > .report-flyout,
+  .category-menu.category-menu-selection-collapsed .group-item:hover > .report-flyout {
+    display: none !important;
   }
 }

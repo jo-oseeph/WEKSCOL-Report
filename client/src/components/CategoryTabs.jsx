@@ -48,9 +48,11 @@ function CategoryTabs({
   const [openCategoryId, setOpenCategoryId] = useState(selectedCategory?.id || null);
   const [openSubcategoryId, setOpenSubcategoryId] = useState(selectedSubcategory?.id || null);
   const [openGroupId, setOpenGroupId] = useState(selectedGroup?.id || null);
+  const [isSelectionCollapsed, setIsSelectionCollapsed] = useState(false);
 
   // Toggle a top-level category so its subcategories can be opened without hover.
   function toggleCategory(categoryId) {
+    setIsSelectionCollapsed(false);
     setOpenCategoryId((current) => (current === categoryId ? null : categoryId));
     setOpenSubcategoryId(null);
     setOpenGroupId(null);
@@ -58,20 +60,38 @@ function CategoryTabs({
 
   // Toggle a subcategory so its groups or direct reports can be opened on touch devices.
   function toggleSubcategory(subcategoryId) {
+    setIsSelectionCollapsed(false);
     setOpenSubcategoryId((current) => (current === subcategoryId ? null : subcategoryId));
     setOpenGroupId(null);
   }
 
   // Toggle a report group so grouped fertilizer reports are visible without hover.
   function toggleGroup(groupId) {
+    setIsSelectionCollapsed(false);
     setOpenGroupId((current) => (current === groupId ? null : groupId));
   }
 
+  function handleSelectReport(category, subcategory, groupOrReport, maybeReport) {
+    setOpenCategoryId(null);
+    setOpenSubcategoryId(null);
+    setOpenGroupId(null);
+    setIsSelectionCollapsed(true);
+    onSelectReport(category, subcategory, groupOrReport, maybeReport);
+  }
+
   return (
-    <nav className="category-menu">
+    <nav
+      className={`category-menu${isSelectionCollapsed ? " category-menu-selection-collapsed" : ""}`}
+      onMouseLeave={() => setIsSelectionCollapsed(false)}
+      onFocusCapture={() => setIsSelectionCollapsed(false)}
+    >
       <ul className="category-menu-list">
         {categories.map((category) => (
-          <li className="category-menu-item" key={category.id}>
+          <li
+            className="category-menu-item"
+            key={category.id}
+            onMouseEnter={() => setIsSelectionCollapsed(false)}
+          >
             <button
               type="button"
               className={
@@ -137,7 +157,7 @@ function CategoryTabs({
                                       "report-flyout-item" +
                                       (selectedReport?.id === report.id ? " report-flyout-item-active" : "")
                                     }
-                                    onClick={() => onSelectReport(category, subcategory, group, report)}
+                                    onClick={() => handleSelectReport(category, subcategory, group, report)}
                                   >
                                     {report.name}
                                   </button>
@@ -163,7 +183,7 @@ function CategoryTabs({
                                   : "")
                               }
                               onClick={() =>
-                                onSelectReport(category, subcategory, report)
+                                handleSelectReport(category, subcategory, report)
                               }
                             >
                               {report.name}
