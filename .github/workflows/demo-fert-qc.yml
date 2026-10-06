@@ -1,4 +1,4 @@
-name: Test Fertilizer QC Demo
+name: Demo Fertilizer QC
 
 on:
   workflow_dispatch: {}
