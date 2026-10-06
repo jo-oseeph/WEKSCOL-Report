@@ -64,8 +64,8 @@ def main():
 
     print(f"Loaded {len(data)} rows for the demo")
 
-    print("\n--- First 50 QC records ---")
-    print(data.head(50).to_string(index=False))
+    print("\n--- First 5 QC records ---")
+    print(data.head(5).to_string(index=False))
 
     print("\n--- Filtering: records marked ISSUE ---")
     issue = data[
