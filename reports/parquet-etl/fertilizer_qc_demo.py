@@ -2,7 +2,6 @@
 Reads fertilizer_issuance_validation.parquet with DuckDB.
 
 Demo purpose:
-- Load only 50 rows from the fertilizer QC Parquet
 - Demonstrate filtering the QC results
 - Keep this separate from the full extraction script
 """
@@ -20,9 +19,33 @@ PARQUET_PATH = (
 
 
 DEMO_SQL = """
-SELECT *
+SELECT
+    Contract_Number,
+    Field_Number,
+    ID_Number,
+    First_Name,
+    OVERLAP,
+    IPRS,
+    Description,
+    Unit_name,
+    Sector_Name,
+    Zone_Name,
+    Section_Name,
+    SubLocation,
+    Village_Name,
+    Measured_Cane_Area,
+    Qty_Requested,
+    Qty_Agri,
+    Qty_Fin,
+    Qty_Delivered,
+    Issuance_Status,
+    Age_Months,
+    Current_Crop_Cycle,
+    Actual_Date_Of_Plant_Ratoon,
+    Fertilizer_Issuance_Flag,
+    Fertilizer_Issuance_Remarks,
+    Request_Created_On
 FROM read_parquet(?)
-LIMIT 50
 """
 
 
@@ -42,7 +65,7 @@ def main():
     print(f"Loaded {len(data)} rows for the demo")
 
     print("\n--- First 50 QC records ---")
-    print(data.to_string(index=False))
+    print(data.head(50).to_string(index=False))
 
     print("\n--- Filtering: records marked ISSUE ---")
     issue = data[
