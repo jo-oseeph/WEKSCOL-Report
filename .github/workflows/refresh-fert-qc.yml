@@ -26,13 +26,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: "pip"   # caches ~/.cache/pip keyed on requirements.txt, skips re-downloading wheels every run
+          cache-dependency-path: reports/parquet-etl/requirements.txt
 
-      - name: Install SQL Server ODBC driver
+      - name: Add Microsoft repo
         run: |
           curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
           curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
           sudo apt-get update
-          ACCEPT_EULA=Y sudo apt-get install -y msodbcsql18 unixodbc-dev
+
+      - name: Install SQL Server ODBC driver (cached)
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: msodbcsql18 unixodbc-dev
+          version: 1.0   # bump this to force a fresh install if the driver version ever changes
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          ACCEPT_EULA: "Y"
 
       - name: Install Python deps
         run: pip install -r requirements.txt
