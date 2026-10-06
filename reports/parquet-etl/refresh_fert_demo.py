@@ -148,7 +148,7 @@ def main():
     # Summary through Section
     fertilizer_pending_agric_approval_summary = location_summary(
         fertilizer_pending_agriculture_approval,
-        ['Unit_name', 'Sector_Name', 'Zone_Name', 'Section_Name'],
+        ['Unit_name', 'Sector_Name'],
         'Fertilizer'
     )
 
