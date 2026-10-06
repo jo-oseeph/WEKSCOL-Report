@@ -99,7 +99,7 @@ INTO #FERT
 FROM DT_SERVICE_REQUEST_MATERIAL A
 
 WHERE
-    A.Created_On >= '20260101'
+    A.Created_On >= '20250101'
 
     AND A.Is_Active = 1
 
@@ -301,7 +301,7 @@ INNER JOIN
        M.Process_Order_Material_ID
 
 WHERE
-    P.CreatedON >= '20260101'
+    P.CreatedON >= '20250101'
 
 GROUP BY
 
@@ -1152,10 +1152,6 @@ SELECT
    ============================================================ */
 
 FROM #BASE B
-
-
---WHERE B.Field_Number in ('FN-1917103','fn-1362339')
-
 
 ORDER BY
 

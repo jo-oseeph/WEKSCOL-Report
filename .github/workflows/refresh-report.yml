@@ -1,4 +1,4 @@
-name: Refresh report parquet
+name: Refresh Fertlizer Data Updates
 
 on:
   workflow_dispatch: {}

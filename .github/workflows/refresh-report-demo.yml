@@ -1,4 +1,4 @@
-name: Test demo query against parquet
+name: Test Refresh Report Demo
 
 on:
   workflow_dispatch: {}   # manual "Run workflow" button - click this to see the demo results
