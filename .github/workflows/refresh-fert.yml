@@ -57,6 +57,7 @@ jobs:
           git config user.email "adrianjuliusaluoch@gmail.com"
           git add data/report_base.parquet
           git diff --cached --quiet || git commit -m "refresh report data"
+          git pull --rebase -X ours origin master
           git push
 
       - name: Open issue on failure
