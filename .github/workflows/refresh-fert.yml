@@ -58,7 +58,7 @@ jobs:
           git config user.name "adrianjuliusaluoch"
           git config user.email "adrianjuliusaluoch@gmail.com"
           git add data/report_base.parquet
-          git diff --cached --quiet || git commit -m "refresh report data"
+          git diff --cached --quiet || git commit -m "refresh fertilizer RQ report"
           git pull --rebase -X ours origin master
           git push
 
