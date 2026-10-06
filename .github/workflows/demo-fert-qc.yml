@@ -27,4 +27,4 @@ jobs:
         run: pip install duckdb pandas
 
       - name: Run fertilizer QC demo
-        run: python fertilizer_qc_demo.py
+        run: python fert_qc_demo.py
