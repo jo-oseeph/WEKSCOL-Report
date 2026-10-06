@@ -20,4 +20,4 @@ jobs:
         run: pip install duckdb pandas
 
       - name: Run demo query
-        run: python run_demo_query.py
+        run: python refresh_fert_demo.py
