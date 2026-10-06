@@ -67,32 +67,5 @@ def main():
     print("\n--- First 5 QC records ---")
     print(data.head(5).to_string(index=False))
 
-    print("\n--- Filtering: records marked ISSUE ---")
-    issue = data[
-        data["Fertilizer_Issuance_Flag"] == "ISSUE"
-    ]
-    print(issue.to_string(index=False))
-
-    print("\n--- Filtering: rejected records ---")
-    rejected = data[
-        data["Fertilizer_Issuance_Flag"] == "REJECTED"
-    ]
-    print(rejected.to_string(index=False))
-
-    print("\n--- Filtering: finance approved but not issued ---")
-    finance_ready = data[
-        (data["Approval_Status"] == "Finance Approved")
-        & (data["Issuance_Status"] == "NOT ISSUED")
-    ]
-    print(finance_ready.to_string(index=False))
-
-    print("\n--- QC flag counts ---")
-    print(
-        data["Fertilizer_Issuance_Flag"]
-        .value_counts(dropna=False)
-        .to_string()
-    )
-
-
 if __name__ == "__main__":
     main()
