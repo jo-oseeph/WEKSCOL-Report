@@ -1,4 +1,4 @@
-name: Refresh Fertlizer REQ
+name: Refresh Fertlizer RQ
 
 on:
   workflow_dispatch: {}
