@@ -109,6 +109,8 @@ WHERE
 
         OR A.Item_Description LIKE '%MAVUNOPLANTING FERT 50KG%'
 
+        OR A.Item_Description LIKE '%MAVUNO PLANTING FERT 50KG%'
+
         OR A.Item_Description LIKE '%ELGON THABITI TOP DRESSING 50KG%'
 
         OR A.Item_Description LIKE '%MAVUNO TOP DRESSING FERT 50KG%'
