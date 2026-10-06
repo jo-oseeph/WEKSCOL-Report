@@ -84,6 +84,31 @@ export const auth = {
     }),
 };
 
+export const admin = {
+  getUsers: () =>
+    request("GET", "/admin/users", {
+      fallbackMessage: "Unable to load users.",
+    }),
+  getReports: () =>
+    request("GET", "/admin/reports", {
+      fallbackMessage: "Unable to load reports.",
+    }),
+  getUserPermissions: (userId) =>
+    request("GET", `/admin/users/${userId}/permissions`, {
+      fallbackMessage: "Unable to load report permissions.",
+    }),
+  updateUserStatus: (userId, status) =>
+    request("PATCH", `/admin/users/${userId}/status`, {
+      data: { status },
+      fallbackMessage: "Unable to update account status.",
+    }),
+  updateUserPermissions: (userId, reportIds) =>
+    request("PUT", `/admin/users/${userId}/permissions`, {
+      data: { reportIds },
+      fallbackMessage: "Unable to save report permissions.",
+    }),
+};
+
 // ---------------------------------------------------------------------------
 // Report endpoints
 // ---------------------------------------------------------------------------
@@ -118,35 +143,6 @@ export const reports = {
     const search = new URLSearchParams(params).toString();
     return `${API_BASE_URL}/api/reports/${reportId}/export.${format}${search ? `?${search}` : ""}`;
   },
-};
-
-// ---------------------------------------------------------------------------
-// Administrator endpoints
-// ---------------------------------------------------------------------------
-
-export const admin = {
-  getUsers: () =>
-    request("GET", "/admin/users", {
-      fallbackMessage: "Unable to load users.",
-    }),
-  getReports: () =>
-    request("GET", "/admin/reports", {
-      fallbackMessage: "Unable to load reports.",
-    }),
-  getUserPermissions: (userId) =>
-    request("GET", `/admin/users/${userId}/permissions`, {
-      fallbackMessage: "Unable to load report permissions.",
-    }),
-  updateUserStatus: (userId, status) =>
-    request("PATCH", `/admin/users/${userId}/status`, {
-      data: { status },
-      fallbackMessage: "Unable to update account status.",
-    }),
-  updateUserPermissions: (userId, reportIds) =>
-    request("PUT", `/admin/users/${userId}/permissions`, {
-      data: { reportIds },
-      fallbackMessage: "Unable to save report permissions.",
-    }),
 };
 
 export default client;

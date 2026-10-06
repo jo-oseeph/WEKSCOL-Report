@@ -3,13 +3,13 @@ import cookies from "../utils/cookies.js";
 const { clearSessionCookie, getSessionToken, setSessionCookie } = cookies;
 
 const currentUserId = async (request, sessionService, cookieName) => {
-  const userId = await sessionService.getUserIdFromToken(
+  const user = await sessionService.getUserFromToken(
     getSessionToken(request, cookieName),
   );
-  if (!userId) {
+  if (!user) {
     throw Object.assign(new Error("You must be logged in."), { statusCode: 401 });
   }
-  return userId;
+  return user.id;
 };
 
 const createAuthController = ({ authService, sessionService, sessionConfig }) => {

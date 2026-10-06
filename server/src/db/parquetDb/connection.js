@@ -6,8 +6,9 @@ let database;
 let connection;
 
 // Return the configured Parquet file path and fail clearly when the file is unavailable.
-async function getParquetPath() {
-  const { parquetPath } = loadConfig();
+async function getParquetPath(dataset = "base") {
+  const config = loadConfig();
+  const parquetPath = dataset === "qc" ? config.qcParquetPath : config.parquetPath;
   try {
     await fs.access(parquetPath);
   } catch {
@@ -29,8 +30,11 @@ function getConnection() {
 
 // Execute a parameterized DuckDB query and return its rows to the report engine.
 export async function executeParquetQuery(query, parameters = []) {
-  const parquetPath = await getParquetPath();
-  const values = parameters.map((value) => (value === "__PARQUET_PATH__" ? parquetPath : value));
+  const tokens = new Set(parameters.filter((value) => typeof value === "string" && value.startsWith("__")));
+  const paths = new Map();
+  if (tokens.has("__PARQUET_PATH__")) paths.set("__PARQUET_PATH__", await getParquetPath("base"));
+  if (tokens.has("__QC_PARQUET_PATH__")) paths.set("__QC_PARQUET_PATH__", await getParquetPath("qc"));
+  const values = parameters.map((value) => paths.get(value) || value);
 
   return new Promise((resolve, reject) => {
     getConnection().all(query, ...values, (error, rows) => {

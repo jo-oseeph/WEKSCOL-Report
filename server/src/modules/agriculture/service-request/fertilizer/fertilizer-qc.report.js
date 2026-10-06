@@ -1,0 +1,22 @@
+export default {
+  id: "fertilizer-qc",
+  name: "Fertilizer QC",
+  description: "Fertilizer issuance validation details and location summaries.",
+  categoryId: "agriculture",
+  subcategoryId: "service-request",
+  groupId: "fertilizer",
+  order: 6,
+  queryModule: "service-request",
+  backend: "parquet",
+  variants: ["detailed", "summary"],
+  variantLabels: { detailed: "Detailed Report", summary: "Summary Report" },
+  summaryGroups: ["unit", "sector", "zone", "section"],
+  params: [
+    { name: "unit", type: "string", sql: "Unit_name = @unit" },
+    { name: "sector", type: "string", sql: "Sector_Name = @sector" },
+    { name: "zone", type: "string", sql: "Zone_Name = @zone" },
+    { name: "section", type: "string", sql: "Section_Name = @section" },
+    { name: "dateFrom", type: "date", sql: "Request_Created_On >= @dateFrom" },
+    { name: "dateTo", type: "date", sql: "Request_Created_On < DATEADD(DAY, 1, @dateTo)" },
+  ],
+};

@@ -12,6 +12,39 @@ const REPORT_RULES = {
   "seedcane-pending-finance": { service: "seedcane", status: "pending-finance" },
   "seedcane-pending-issuance": { service: "seedcane", status: "pending-issuance" },
   "seedcane-issued": { service: "seedcane", status: "issued" },
+  "fertilizer-qc": {
+    service: "fertilizer",
+    dataset: "qc",
+    dateColumn: "Request_Created_On",
+    columns: [
+      "Contract_Number",
+      "Field_Number",
+      "ID_Number",
+      "First_Name",
+      "OVERLAP",
+      "IPRS",
+      "Description",
+      "Unit_name",
+      "Sector_Name",
+      "Zone_Name",
+      "Section_Name",
+      "SubLocation",
+      "Village_Name",
+      "Measured_Cane_Area",
+      "Qty_Requested",
+      "Qty_Agri",
+      "Qty_Fin",
+      "Qty_Delivered",
+      "Issuance_Status",
+      "Age_Months",
+      "Current_Crop_Cycle",
+      "Actual_Date_Of_Plant_Ratoon",
+      "Fertilizer_Issuance_Flag",
+      "Fertilizer_Issuance_Remarks",
+      "Request_Created_On",
+    ],
+    orderBy: "Unit_name, Sector_Name, Zone_Name, Section_Name, Field_Number",
+  },
 };
 
 const GROUP_COLUMNS = {
@@ -50,9 +83,11 @@ function nextDateOnly(value) {
   return date.toISOString().slice(0, 10);
 }
 
-function buildFilters(service, query) {
-  const clauses = [service === "fertilizer" ? FERTILIZER_FILTER : SEEDCANE_FILTER];
-  const parameters = ["__PARQUET_PATH__"];
+function buildFilters(rule, query) {
+  const clauses = rule.dataset === "qc"
+    ? []
+    : [rule.service === "fertilizer" ? FERTILIZER_FILTER : SEEDCANE_FILTER];
+  const parameters = [rule.dataset === "qc" ? "__QC_PARQUET_PATH__" : "__PARQUET_PATH__"];
   const dateFrom = query.dateFrom && query.dateFrom !== "all" ? query.dateFrom : undefined;
   const dateTo = query.dateTo && query.dateTo !== "all" ? query.dateTo : undefined;
 
@@ -71,8 +106,9 @@ function buildFilters(service, query) {
     throw httpError("dateFrom cannot be after dateTo.", 400);
   }
 
-  addFilter(clauses, parameters, "Max_Created_On", dateFrom ? `${dateFrom}T00:00:00` : undefined, ">=");
-  addFilter(clauses, parameters, "Max_Created_On", dateTo ? `${nextDateOnly(dateTo)}T00:00:00` : undefined, "<");
+  const dateColumn = rule.dateColumn || "Max_Created_On";
+  addFilter(clauses, parameters, dateColumn, dateFrom ? `${dateFrom}T00:00:00` : undefined, ">=");
+  addFilter(clauses, parameters, dateColumn, dateTo ? `${nextDateOnly(dateTo)}T00:00:00` : undefined, "<");
 
   return { clauses, parameters };
 }
@@ -161,39 +197,43 @@ const REPORT_COLUMNS = {
 
 const ORDER_BY = "Region_Name, Sector_Name, Zone_Name, Section_Name, Field_Number";
 
-function reportColumns(status) {
-  const columns = REPORT_COLUMNS[status];
-  if (!columns) throw httpError(`Unsupported service request status: ${status}.`, 500);
+function reportColumns(rule) {
+  const columns = rule.columns || REPORT_COLUMNS[rule.status];
+  if (!columns) throw httpError(`Unsupported service request status: ${rule.status}.`, 500);
   return columns.join(",\n      ");
 }
 
-function sourceSql(filters, status) {
+function sourceSql(filters, rule) {
   return `
     SELECT
-      ${reportColumns(status)}
+      ${reportColumns(rule)}
     FROM read_parquet(?)
-    WHERE ${filters.clauses.join(" AND ")}
-      AND ${statusFilter(status)}`;
+    ${filters.clauses.length > 0 ? `WHERE ${filters.clauses.join(" AND ")}${rule.status ? `\n      AND ${statusFilter(rule.status)}` : ""}` : ""}`;
 }
 
-function detailedQuery(filters, status) {
+function detailedQuery(filters, rule) {
   return `
     SELECT *
-    FROM (${sourceSql(filters, status)}) AS service_request_result
-    ORDER BY ${ORDER_BY}`;
+    FROM (${sourceSql(filters, rule)}) AS service_request_result
+    ORDER BY ${rule.orderBy || ORDER_BY}`;
 }
 
-function summaryQuery(filters, status, group, service) {
+function summaryQuery(filters, rule, group) {
   const groupColumns = GROUP_COLUMNS[group];
   if (!groupColumns) throw httpError(`Unsupported summary group: ${group}.`, 400);
   const groupSql = groupColumns.map((column) => `"${column}"`).join(", ");
-  const quantityName = service === "fertilizer" ? "Quantity_Bags" : "Quantity_Tonnes";
+  const quantityName = rule.service === "fertilizer" ? "Quantity_Bags" : "Quantity_Tonnes";
 
   return `
-    WITH filtered AS (${sourceSql(filters, status)}),
+    WITH filtered AS (${sourceSql(filters, rule)}),
     fields AS (
-      SELECT DISTINCT ${groupSql}, Field_Number, TRY_CAST(Measured_Cane_Area AS DOUBLE) AS Measured_Cane_Area
-      FROM filtered
+      SELECT ${groupSql}, Field_Number, Measured_Cane_Area
+      FROM (
+        SELECT ${groupSql}, Field_Number, TRY_CAST(Measured_Cane_Area AS DOUBLE) AS Measured_Cane_Area,
+          ROW_NUMBER() OVER (PARTITION BY ${groupSql}, Field_Number ORDER BY Field_Number) AS field_row
+        FROM filtered
+      ) AS distinct_fields
+      WHERE field_row = 1
     ),
     field_summary AS (
       SELECT ${groupSql}, COUNT(DISTINCT Field_Number) AS Total_Fields, SUM(Measured_Cane_Area) AS Total_Acreage
@@ -215,10 +255,10 @@ export async function runParquetReport({ reportId, variant, group, query }) {
   const rule = REPORT_RULES[reportId];
   if (!rule) throw httpError("This service request report is not configured for Parquet execution.", 500);
 
-  const filters = buildFilters(rule.service, query);
+  const filters = buildFilters(rule, query);
   const sql = variant === "detailed"
-    ? detailedQuery(filters, rule.status)
-    : summaryQuery(filters, rule.status, group, rule.service);
+    ? detailedQuery(filters, rule)
+    : summaryQuery(filters, rule, group);
   const rows = await executeParquetQuery(sql, filters.parameters);
 
   return {

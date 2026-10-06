@@ -27,21 +27,23 @@ const createSessionService = ({
       if (!token) return null;
       const session = await sessionRepository.findValid(hashToken(token), Date.now());
       const user = session ? await userRepository.findById(session.user_id) : null;
-       if (!user || user.status !== "approved") return null;
-       const permissions = reportPermissionRepository
-         ? await reportPermissionRepository.findForUser(user.id)
-         : [];
-       return {
-            id: user.id,
-            firstName: user.first_name,
-            lastName: user.last_name,
-            email: user.email,
-            idNumber: user.id_number,
-            avatarUrl: user.avatar_url || null,
-             role: user.role || "user",
-             status: user.status || "approved",
-             permissions,
-           };
+      if (!user || user.status !== "approved") return null;
+
+      const permissions = reportPermissionRepository
+        ? await reportPermissionRepository.findForUser(user.id)
+        : [];
+
+      return {
+        id: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email,
+        idNumber: user.id_number,
+        avatarUrl: user.avatar_url || null,
+        role: user.role || "user",
+        status: user.status || "approved",
+        permissions,
+      };
     },
     async getUserIdFromToken(token) {
       if (!token) return null;
