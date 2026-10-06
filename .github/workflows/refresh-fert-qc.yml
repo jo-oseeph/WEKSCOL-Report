@@ -1,4 +1,4 @@
-name: Refresh Fertlizer RQ
+name: Refresh Fertilizer QC
 
 on:
   workflow_dispatch: {}
@@ -8,7 +8,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: refresh-report-parquet
+  group: fertilizer-qc-refresh
   cancel-in-progress: true
 
 jobs:
@@ -51,14 +51,14 @@ jobs:
           max_attempts: 2
           retry_wait_seconds: 30
           retry_on: error
-          command: python reports/parquet-etl/refresh_fert.py
+          command: python reports/parquet-etl/fert_qc.py
 
       - name: Commit updated parquet
         run: |
           git config user.name "adrianjuliusaluoch"
           git config user.email "adrianjuliusaluoch@gmail.com"
-          git add data/report_base.parquet
-          git diff --cached --quiet || git commit -m "refresh report data"
+          git add data/fertilizer_issuance_validation.parquet
+          git diff --cached --quiet || git commit -m "refresh fertilizer QC report"
           git pull --rebase -X ours origin master
           git push
 
