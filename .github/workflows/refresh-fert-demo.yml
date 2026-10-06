@@ -1,4 +1,4 @@
-name: Test Refresh Report Demo
+name: Refresh Fert Demo
 
 on:
   workflow_dispatch: {}   # manual "Run workflow" button - click this to see the demo results
