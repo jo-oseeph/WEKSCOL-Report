@@ -1,4 +1,4 @@
-name: Refresh Fertilizer QC
+name: Refresh Fertlizer RQ
 
 on:
   workflow_dispatch: {}
@@ -8,7 +8,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: fertilizer-qc-refresh
+  group: refresh-report-parquet
   cancel-in-progress: true
 
 jobs:
@@ -35,9 +35,6 @@ jobs:
           curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
           sudo apt-get update
           ACCEPT_EULA=Y sudo apt-get install -y msodbcsql18 unixodbc-dev
-        # not cached: msodbcsql18's postinstall needs EULA acceptance via debconf each run,
-        # and the cached-reinstall path doesn't replay that reliably (driver never registers
-        # in odbcinst.ini -> "file not found" on connect). This step is fast anyway.
 
       - name: Install Python deps
         run: pip install -r requirements.txt
@@ -54,13 +51,13 @@ jobs:
           max_attempts: 2
           retry_wait_seconds: 30
           retry_on: error
-          command: python reports/parquet-etl/fert_qc.py
+          command: python reports/parquet-etl/refresh_fert.py
 
       - name: Commit updated parquet
         run: |
           git config user.name "adrianjuliusaluoch"
           git config user.email "adrianjuliusaluoch@gmail.com"
-          git add data/fertilizer_issuance_validation.parquet
+          git add data/report_base.parquet
           git diff --cached --quiet || git commit -m "refresh report data"
           git pull --rebase -X ours origin master
           git push
