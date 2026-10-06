@@ -4,10 +4,11 @@ const createReportPermissionRepository = (db) => {
       "SELECT report_id FROM user_report_permissions WHERE user_id = $1 ORDER BY report_id",
       [userId],
     );
-    return result.rows.map((row) => row.report_id);
+    return result.rows.map((row) => String(row.report_id));
   };
 
   const replaceForUser = async (userId, reportIds, grantedBy) => {
+    const normalizedReportIds = [...new Set(reportIds.map((reportId) => String(reportId)))];
     const client = await db.connect();
     try {
       await client.query("BEGIN");
@@ -16,7 +17,7 @@ const createReportPermissionRepository = (db) => {
         [userId],
       );
 
-      for (const reportId of reportIds) {
+      for (const reportId of normalizedReportIds) {
         await client.query(
           `INSERT INTO user_report_permissions
              (user_id, report_id, granted_by, created_at)

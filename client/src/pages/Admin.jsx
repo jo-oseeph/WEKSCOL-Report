@@ -87,6 +87,11 @@ function Admin() {
         selectedPermissions[account.id] || [],
       );
       updateLocalUser(result.user);
+      const refreshedUsers = await adminApi.getUsers();
+      const refreshedUser = (refreshedUsers.users || []).find(
+        (currentUser) => currentUser.id === account.id,
+      );
+      if (refreshedUser) updateLocalUser(refreshedUser);
       setMessage(`Report permissions saved for ${account.firstName} ${account.lastName}.`);
     } catch (requestError) {
       setError(requestError.message);

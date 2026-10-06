@@ -13,7 +13,7 @@ const toAdminUser = (user, permissions) => ({
 });
 
 const createAdminService = ({ userRepository, reportPermissionRepository, sessionService, reportIds }) => {
-  const allowedReportIds = new Set(reportIds);
+  const allowedReportIds = new Set(reportIds.map((reportId) => String(reportId)));
 
   return {
     async listUsers() {
@@ -56,7 +56,9 @@ const createAdminService = ({ userRepository, reportPermissionRepository, sessio
       if (!Array.isArray(selectedReportIds) || selectedReportIds.some((reportId) => typeof reportId !== "string")) {
         throw Object.assign(new Error("Report permissions must be an array of report IDs."), { statusCode: 400 });
       }
-      const uniqueReportIds = [...new Set(selectedReportIds)];
+      const uniqueReportIds = [
+        ...new Set(selectedReportIds.map((reportId) => String(reportId))),
+      ];
       if (uniqueReportIds.some((reportId) => !allowedReportIds.has(reportId))) {
         throw Object.assign(new Error("One or more selected reports do not exist."), { statusCode: 400 });
       }
@@ -66,7 +68,8 @@ const createAdminService = ({ userRepository, reportPermissionRepository, sessio
         throw Object.assign(new Error("Report permissions can only be assigned to approved regular users."), { statusCode: 400 });
       }
       await reportPermissionRepository.replaceForUser(userId, uniqueReportIds, grantedBy);
-      return toAdminUser(user, uniqueReportIds);
+      const persistedReportIds = await reportPermissionRepository.findForUser(userId);
+      return toAdminUser(user, persistedReportIds);
     },
   };
 };
