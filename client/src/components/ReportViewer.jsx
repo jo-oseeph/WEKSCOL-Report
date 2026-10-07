@@ -14,6 +14,7 @@ function ReportViewer({ report }) {
   );
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [identifierSearch, setIdentifierSearch] = useState("");
   const [locations, setLocations] = useState([]);
   const [caneTypes, setCaneTypes] = useState([]);
   const [result, setResult] = useState(null);
@@ -44,10 +45,19 @@ function ReportViewer({ report }) {
   const query = useMemo(() => {
     const [first, second, zone, section] = locationSelection;
     if (isServiceRequest || ["cane-supply", "daily-weighment", "overdue"].includes(report.id)) {
-      return { unit: first, sector: second, zone, section, caneType, dateFrom, dateTo };
+      return {
+        unit: first,
+        sector: second,
+        zone,
+        section,
+        caneType,
+        dateFrom,
+        dateTo,
+        identifierSearch,
+      };
     }
-    return { plant: first, region: second, zone, section, dateFrom, dateTo };
-  }, [locationSelection, caneType, dateFrom, dateTo, report.id, isServiceRequest]);
+    return { plant: first, region: second, zone, section, dateFrom, dateTo, identifierSearch };
+  }, [locationSelection, caneType, dateFrom, dateTo, identifierSearch, report.id, isServiceRequest]);
 
   // Strips "all"/empty values so they are not sent to the backend as filters.
   const cleanParams = useMemo(() => {
@@ -159,35 +169,52 @@ function ReportViewer({ report }) {
           </div>
         ) : null}
 
-        <div className="report-filter-group">
-          <span className="report-filter-group-label">Date Range</span>
-          <div className="report-date-fields">
-            <div className="report-filter-field">
-              <label htmlFor="dateFrom">Date From</label>
-              <input
-                id="dateFrom"
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-              />
+        <div className="report-filter-row">
+          <div className="report-filter-group">
+            <span className="report-filter-group-label">Date Range</span>
+            <div className="report-date-fields">
+              <div className="report-filter-field">
+                <label htmlFor="dateFrom">Date From</label>
+                <input
+                  id="dateFrom"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+              </div>
+              <div className="report-filter-field">
+                <label htmlFor="dateTo">Date To</label>
+                <input
+                  id="dateTo"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </div>
             </div>
-            <div className="report-filter-field">
-              <label htmlFor="dateTo">Date To</label>
-              <input
-                id="dateTo"
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-              />
-            </div>
-
+            {report.id === "cane-supply" ? (
+              <p className="report-filter-hint">
+                The Daily Detailed report covers one full month at a time. Choose a Date From and Date To within the same month (or leave both blank for the current month).
+              </p>
+            ) : null}
           </div>
-          {report.id === "cane-supply" ? (
-            <p className="report-filter-hint">
-              The Daily Detailed report covers one full month at a time. Choose a Date From and Date To within the same month (or leave both blank for the current month).
-            </p>
-          ) : null}
 
+          <div className="report-filter-group report-search-group">
+            <span className="report-filter-group-label">Search</span>
+            <div className="report-query-canvas">
+              <label htmlFor="identifierSearch"> Search ID Number/Field Number</label>
+              <input
+                id="identifierSearch"
+                type="search"
+                value={identifierSearch}
+                onChange={(event) => setIdentifierSearch(event.target.value)}
+                placeholder="Enter ID_NUMBER or FIELD_NUMBER"
+                autoComplete="off"
+              />
+              <p className="report-filter-hint">
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="report-filter-actions">

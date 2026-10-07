@@ -1,5 +1,6 @@
 import { executeParquetQuery } from "../../db/parquetDb/connection.js";
 import { httpError } from "../../shared/errors.js";
+import normalizeIdentifierSearch from "./normalizeIdentifierSearch.js";
 
 const REPORT_RULES = {
   "fertilizer-requests": { service: "fertilizer", status: "requests" },
@@ -68,6 +69,13 @@ function addFilter(clauses, parameters, column, value, operator = "=") {
   parameters.push(value);
 }
 
+function addIdentifierFilter(clauses, parameters, value) {
+  const normalized = normalizeIdentifierSearch(value);
+  if (!normalized) return;
+  clauses.push("(REPLACE(UPPER(TRIM(CAST(ID_Number AS VARCHAR))), 'FN-', '') = ? OR REPLACE(UPPER(TRIM(CAST(Field_Number AS VARCHAR))), 'FN-', '') = ?)");
+  parameters.push(normalized, normalized);
+}
+
 function isDateOnly(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const [year, month, day] = value.split("-").map(Number);
@@ -95,6 +103,7 @@ function buildFilters(rule, query) {
   addFilter(clauses, parameters, "Sector_Name", query.sector);
   addFilter(clauses, parameters, "Zone_Name", query.zone);
   addFilter(clauses, parameters, "Section_Name", query.section);
+  addIdentifierFilter(clauses, parameters, query.identifierSearch);
 
   if (dateFrom && !isDateOnly(dateFrom)) {
     throw httpError("dateFrom must be a valid date in YYYY-MM-DD format.", 400);
@@ -265,9 +274,9 @@ export async function runParquetReport({ reportId, variant, group, query }) {
     rows,
     columns: rows.length > 0 ? Object.keys(rows[0]) : [],
     parameters: Object.fromEntries(
-      ["unit", "sector", "zone", "section", "dateFrom", "dateTo"]
+      ["unit", "sector", "zone", "section", "dateFrom", "dateTo", "identifierSearch"]
         .filter((name) => query[name] !== undefined && query[name] !== "" && query[name] !== "all")
-        .map((name) => [name, query[name]]),
+        .map((name) => [name, name === "identifierSearch" ? normalizeIdentifierSearch(query[name]) : query[name]]),
     ),
   };
 }
