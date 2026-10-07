@@ -13,7 +13,13 @@ import { createContainer } from "./bootstrap/container.js";
 export default async function createApp() {
   const container = await createContainer();
   const app = express();
-  app.use(cors({ origin: container.config.clientUrls, credentials: true }));
+  app.use(
+    cors({
+      origin: container.config.clientUrls,
+      credentials: true,
+      exposedHeaders: ["Content-Disposition"],
+    }),
+  );
   app.use(express.json({ limit: "32kb" }));
   app.use(morgan("dev"));
   app.get("/", (request, response) =>

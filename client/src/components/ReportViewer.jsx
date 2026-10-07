@@ -20,6 +20,7 @@ function ReportViewer({ report }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [activeVariant, setActiveVariant] = useState("detailed");
   const [isLoading, setIsLoading] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState("");
   const [error, setError] = useState("");
   const [caneType, setCaneType] = useState("all");
   const isServiceRequest = report.queryModule === "service-request";
@@ -87,8 +88,31 @@ function ReportViewer({ report }) {
     await loadReport(variant);
   }
 
-  function download(format) {
-    window.location.assign(reportsApi.getExportUrl(report.id, format, { ...cleanParams, variant: activeVariant }));
+  async function download(format) {
+    if (exportingFormat) return;
+    setExportingFormat(format);
+    setError("");
+    try {
+      const response = await reportsApi.download(report.id, format, {
+        ...cleanParams,
+        variant: activeVariant,
+      });
+      const contentDisposition = response.headers["content-disposition"] || "";
+      const fileNameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+      const fileName = fileNameMatch?.[1] || `${report.name}.${format}`;
+      const objectUrl = URL.createObjectURL(response.data);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setExportingFormat("");
+    }
   }
 
   const totalPages = result ? Math.max(1, Math.ceil(result.rows.length / RESULTS_PER_PAGE)) : 1;
@@ -209,10 +233,16 @@ function ReportViewer({ report }) {
               Showing {firstVisibleRow}–{lastVisibleRow} of {result.rows.length} record{result.rows.length === 1 ? "" : "s"}
             </span>
             <div className="report-results-actions">
-              <button type="button" className="report-action-btn" onClick={() => download("pdf")}>Export PDF</button>
-              <button type="button" className="report-action-btn" onClick={() => download("xlsx")}>Export Excel</button>
-              <button type="button" className="report-action-btn" onClick={() => download("csv")}>Export CSV</button>
-              <button type="button" className="report-action-btn" onClick={() => window.print()}>
+              <button type="button" className="report-action-btn" onClick={() => download("pdf")} disabled={Boolean(exportingFormat)}>
+                {exportingFormat === "pdf" ? "Preparing PDF…" : "Export PDF"}
+              </button>
+              <button type="button" className="report-action-btn" onClick={() => download("xlsx")} disabled={Boolean(exportingFormat)}>
+                {exportingFormat === "xlsx" ? "Preparing Excel…" : "Export Excel"}
+              </button>
+              <button type="button" className="report-action-btn" onClick={() => download("csv")} disabled={Boolean(exportingFormat)}>
+                {exportingFormat === "csv" ? "Preparing CSV…" : "Export CSV"}
+              </button>
+              <button type="button" className="report-action-btn" onClick={() => window.print()} disabled={Boolean(exportingFormat)}>
                 Print
               </button>
             </div>

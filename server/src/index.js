@@ -6,6 +6,10 @@ const server = app.listen(container.config.port, () =>
     `WESCOL server listening on http://localhost:${container.config.port}`,
   ),
 );
+server.keepAliveTimeout = 120_000;
+server.headersTimeout = 125_000;
+server.requestTimeout = 0;
+
 async function shutdown(signal) {
   console.warn(`WESCOL server received ${signal}; shutting down.`);
   server.close(async () => {

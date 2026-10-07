@@ -41,6 +41,32 @@ async function request(method, url, { data, params, fallbackMessage, timeout } =
   }
 }
 
+async function requestFile(url, { params, fallbackMessage } = {}) {
+  try {
+    return await client.get(url, {
+      params,
+      responseType: "blob",
+      // Export generation can legitimately take longer than normal API calls.
+      // The server owns the report/database timeout for this request.
+      timeout: 0,
+    });
+  } catch (error) {
+    let message = fallbackMessage || "Unable to download the export.";
+    const responseData = error.response?.data;
+    if (responseData instanceof Blob) {
+      try {
+        const payload = JSON.parse(await responseData.text());
+        message = payload.error || message;
+      } catch {
+        // Keep the safe fallback when the server returned a non-JSON error page.
+      }
+    } else if (responseData?.error) {
+      message = responseData.error;
+    }
+    throw new Error(message);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Auth endpoints
 // ---------------------------------------------------------------------------
@@ -135,14 +161,17 @@ export const reports = {
       timeout: 0,
       fallbackMessage: "Unable to generate report.",
     }),
-  // Export downloads are a full browser navigation (not an XHR/axios call),
-  // so they need an absolute URL to the backend in production -- a relative
-  // "/api/..." URL would resolve against the frontend's own origin (Vercel)
-  // instead of the backend (Render).
+  // Retained for callers that need to construct a direct export URL. The
+  // report viewer uses download() below so it can show progress and errors.
   getExportUrl: (reportId, format, params) => {
     const search = new URLSearchParams(params).toString();
     return `${API_BASE_URL}/api/reports/${reportId}/export.${format}${search ? `?${search}` : ""}`;
   },
+  download: (reportId, format, params) =>
+    requestFile(`/reports/${reportId}/export.${format}`, {
+      params,
+      fallbackMessage: `Unable to download the ${format.toUpperCase()} export.`,
+    }),
 };
 
 export default client;
