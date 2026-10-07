@@ -57,6 +57,8 @@ WHERE (
        Description LIKE '%TSP FERTILIZER 50KG%'
     OR Description LIKE '%ELGON THABITI TOP DRESSING 50KG%'
     OR Description LIKE '%MAVUNO TOP DRESSING FERT 50KG%'
+    OR Description LIKE '%MAVUNOPLANTING FERT 50KG%'
+    OR Description LIKE '%MAVUNO PLANTING FERT 50KG%'
 )
 AND (
        Qty_Agri IS NULL
