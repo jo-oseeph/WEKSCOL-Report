@@ -415,6 +415,39 @@
   pointer-events: none;
 }
 
+.auth-session-state {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.auth-session-message {
+  color: rgba(242, 251, 246, 0.82);
+  line-height: 1.6;
+}
+
+.auth-session-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 180px;
+  padding: 13px 22px;
+  border-radius: 8px;
+  background: #f2fbf6;
+  color: var(--color-primary-dark);
+  font-weight: 700;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.auth-session-action:hover {
+  background: #d9f3e4;
+  color: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
 .auth-header {
   position: relative;
   margin-bottom: 22px;

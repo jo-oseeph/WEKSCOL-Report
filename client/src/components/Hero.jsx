@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import LoginForm from "./LoginForm.jsx";
 import RegisterForm from "./RegisterForm.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/Hero.css";
 
 const heroSlides = [
@@ -96,6 +98,7 @@ function Hero() {
   const [registerSuccessMessage, setRegisterSuccessMessage] = useState("");
   const [prefillUsername, setPrefillUsername] = useState("");
   const formRef = useRef(null);
+  const { user, isLoading } = useAuth();
   const activeSlideContent = heroSlides[activeSlide];
 
   useEffect(() => {
@@ -163,41 +166,61 @@ function Hero() {
 
       <section className="auth-panel" id="auth-panel">
         <div className="auth-panel-inner">
-          <div className="auth-header">
-            <h1 className="auth-title">
-              {mode === "login" ? "Sign in" : "Create account"}
-            </h1>
-          </div>
+          {isLoading ? (
+            <div className="auth-session-state">
+              <p className="auth-note">Checking your session...</p>
+            </div>
+          ) : user ? (
+            <div className="auth-session-state">
+              <div className="auth-header">
+                <h1 className="auth-title">Welcome back</h1>
+              </div>
+              <p className="auth-session-message">
+                You are signed in{user.firstName ? ` as ${user.firstName}` : ""}.
+              </p>
+              <Link className="auth-session-action" to="/reports">
+                View reports
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className="auth-header">
+                <h1 className="auth-title">
+                  {mode === "login" ? "Sign in" : "Create account"}
+                </h1>
+              </div>
 
-          <div key={mode} className="auth-form-wrap" ref={formRef}>
-            {mode === "login" ? (
-              <LoginForm
-                successMessage={registerSuccessMessage}
-                onSuccessMessageClear={() => setRegisterSuccessMessage("")}
-                prefillUsername={prefillUsername}
-              />
-            ) : (
-              <RegisterForm onRegistered={handleRegistered} />
-            )}
-          </div>
+              <div key={mode} className="auth-form-wrap" ref={formRef}>
+                {mode === "login" ? (
+                  <LoginForm
+                    successMessage={registerSuccessMessage}
+                    onSuccessMessageClear={() => setRegisterSuccessMessage("")}
+                    prefillUsername={prefillUsername}
+                  />
+                ) : (
+                  <RegisterForm onRegistered={handleRegistered} />
+                )}
+              </div>
 
-          <p className="auth-toggle">
-            {mode === "login" ? (
-              <>
-                No account?{" "}
-                <button type="button" onClick={() => switchMode("register")}>
-                  Register
-                </button>
-              </>
-            ) : (
-              <>
-                Have an account?{" "}
-                <button type="button" onClick={() => switchMode("login")}>
-                  Sign in
-                </button>
-              </>
-            )}
-          </p>
+              <p className="auth-toggle">
+                {mode === "login" ? (
+                  <>
+                    No account?{" "}
+                    <button type="button" onClick={() => switchMode("register")}>
+                      Register
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Have an account?{" "}
+                    <button type="button" onClick={() => switchMode("login")}>
+                      Sign in
+                    </button>
+                  </>
+                )}
+              </p>
+            </>
+          )}
         </div>
       </section>
     </main>
