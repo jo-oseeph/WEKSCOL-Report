@@ -99,7 +99,7 @@ INTO #FERT
 FROM DT_SERVICE_REQUEST_MATERIAL A
 
 WHERE
-    A.Created_On >= '20250101'
+    A.Created_On >= '20260101'
 
     AND A.Is_Active = 1
 
@@ -108,8 +108,6 @@ WHERE
         A.Item_Description LIKE '%TSP FERTILIZER 50KG%'
 
         OR A.Item_Description LIKE '%MAVUNOPLANTING FERT 50KG%'
-
-        OR A.Item_Description LIKE '%MAVUNO PLANTING FERT 50KG%'
 
         OR A.Item_Description LIKE '%ELGON THABITI TOP DRESSING 50KG%'
 
@@ -303,7 +301,7 @@ INNER JOIN
        M.Process_Order_Material_ID
 
 WHERE
-    P.CreatedON >= '20250101'
+    P.CreatedON >= '20260101'
 
 GROUP BY
 
