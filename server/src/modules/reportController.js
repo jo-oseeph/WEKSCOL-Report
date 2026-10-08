@@ -8,6 +8,7 @@ import createReportResultCache from "./report-engine/reportResultCache.js";
 import { cached } from "./report-engine/filtersCache.js";
 import { loadInvestmentFilters } from "./agriculture/investment/investment.query.js";
 import { loadHarvestingFilters } from "./agriculture/harvesting/harvesting.query.js";
+import { loadPlantationFilters } from "./agriculture/plantation/plantation.query.js";
 
 function csv(value) {
   const text = value == null ? "" : String(value);
@@ -161,12 +162,27 @@ export default function createReportsController() {
 
     async filters(request, response, next) {
       try {
-        const source = request.query.source === "harvesting";
+        const source = request.query.source || "investment";
+        const filterSources = {
+          harvesting: {
+            cacheKey: "harvesting-locations",
+            loader: loadHarvestingFilters,
+          },
+          plantation: {
+            cacheKey: "plantation-locations",
+            loader: loadPlantationFilters,
+          },
+          investment: {
+            cacheKey: "investment-locations",
+            loader: loadInvestmentFilters,
+          },
+        };
+        const selectedSource = filterSources[source] || filterSources.investment;
         response.json({
           locations: (
             await cached(
-              source ? "harvesting-locations" : "investment-locations",
-              source ? loadHarvestingFilters : loadInvestmentFilters,
+              selectedSource.cacheKey,
+              selectedSource.loader,
             )
           ).rows,
         });

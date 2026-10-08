@@ -25,10 +25,13 @@ function ReportViewer({ report }) {
   const [error, setError] = useState("");
   const [caneType, setCaneType] = useState("all");
   const isServiceRequest = report.queryModule === "service-request";
+  const isPlantation = report.queryModule === "plantation";
 
   useEffect(() => {
     const source = isServiceRequest
       ? "investment"
+      : isPlantation
+      ? "plantation"
       : ["cane-supply", "daily-weighment"].includes(report.id)
       ? "harvesting"
       : report.id === "overdue" ? "investment" : undefined;
@@ -40,11 +43,11 @@ function ReportViewer({ report }) {
         setCaneTypes(data.caneTypes || []);
       })
       .catch((requestError) => setError(requestError.message));
-  }, [report.id, isServiceRequest]);
+  }, [report.id, isServiceRequest, isPlantation]);
 
   const query = useMemo(() => {
     const [first, second, zone, section] = locationSelection;
-    if (isServiceRequest || ["cane-supply", "daily-weighment", "overdue"].includes(report.id)) {
+    if (isServiceRequest || isPlantation || ["cane-supply", "daily-weighment", "overdue"].includes(report.id)) {
       return {
         unit: first,
         sector: second,
@@ -57,7 +60,7 @@ function ReportViewer({ report }) {
       };
     }
     return { plant: first, region: second, zone, section, dateFrom, dateTo, identifierSearch };
-  }, [locationSelection, caneType, dateFrom, dateTo, identifierSearch, report.id, isServiceRequest]);
+  }, [locationSelection, caneType, dateFrom, dateTo, identifierSearch, report.id, isServiceRequest, isPlantation]);
 
   // Strips "all"/empty values so they are not sent to the backend as filters.
   const cleanParams = useMemo(() => {
@@ -68,7 +71,7 @@ function ReportViewer({ report }) {
     return params;
   }, [query]);
 
-  const isHarvesting = isServiceRequest || ["cane-supply", "daily-weighment", "overdue"].includes(report.id);
+  const isHarvesting = isServiceRequest || isPlantation || ["cane-supply", "daily-weighment", "overdue"].includes(report.id);
   const filterLocations = locations;
 
   async function loadReport(variant = "detailed") {

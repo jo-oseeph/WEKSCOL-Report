@@ -19,6 +19,8 @@ export default function buildFilters(definition, query = {}) {
   if (identifierSearch) {
     const identifierColumns = definition.queryModule === "harvesting"
       ? ["Farmer_Id_Number", "Field_No"]
+      : definition.queryModule === "plantation"
+      ? ["Rec_Farmer_Id", "Rec_Field_No"]
       : ["ID_Number", "Field_Number"];
     clauses.push(`(REPLACE(UPPER(LTRIM(RTRIM(CONVERT(VARCHAR(100), ${identifierColumns[0]})))), 'FN-', '') = @identifierSearch OR REPLACE(UPPER(LTRIM(RTRIM(CONVERT(VARCHAR(100), ${identifierColumns[1]})))), 'FN-', '') = @identifierSearch)`);
     parameters.identifierSearch = identifierSearch;

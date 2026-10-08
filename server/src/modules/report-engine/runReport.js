@@ -6,6 +6,7 @@ import { httpError } from "../../shared/errors.js";
 import { runInvestmentQuery } from "../agriculture/investment/investment.query.js";
 import { runHarvestingQuery } from "../agriculture/harvesting/harvesting.query.js";
 import { runServiceRequestQuery } from "../agriculture/service-request/service-request.query.js";
+import { runPlantationQuery } from "../agriculture/plantation/plantation.query.js";
 import { runParquetReport } from "./runParquetReport.js";
 
 export default async function runReport(reportId, query = {}) {
@@ -26,6 +27,7 @@ export default async function runReport(reportId, query = {}) {
     harvesting: runHarvestingQuery,
     investment: runInvestmentQuery,
     "service-request": runServiceRequestQuery,
+    plantation: runPlantationQuery,
   };
   const queryRunner = queryRunners[definition.queryModule] || runInvestmentQuery;
   if (definition.backend !== "parquet") {
