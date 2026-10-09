@@ -8,12 +8,14 @@ import { runHarvestingQuery } from "../agriculture/harvesting/harvesting.query.j
 import { runServiceRequestQuery } from "../agriculture/service-request/service-request.query.js";
 import { runPlantationQuery } from "../agriculture/plantation/plantation.query.js";
 import { runParquetReport } from "./runParquetReport.js";
+import validateDateRange from "./validateDateRange.js";
 
 export default async function runReport(reportId, query = {}) {
   const { reports } = await loadModules();
   const definition = reports.get(reportId);
   if (!definition) throw httpError("Report not found.", 404);
 
+  const dateRange = validateDateRange(query);
   const { variant, group } = resolveVariant(definition, query);
   let filters = { parameters: {} };
   let result;
@@ -55,6 +57,7 @@ export default async function runReport(reportId, query = {}) {
     group,
     groupLabel: group ? `${group[0].toUpperCase()}${group.slice(1)}` : null,
     monthLabel,
+    dateRange,
     filters: filters.parameters,
     columns: result.columns,
     rows,

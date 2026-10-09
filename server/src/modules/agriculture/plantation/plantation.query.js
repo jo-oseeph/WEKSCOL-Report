@@ -21,8 +21,8 @@ function hasValue(value) {
 
 function sourcePredicates(parameters) {
   const conditions = [
-    "dccs.WeigmentRpt_Dt >= COALESCE(@dateFrom, CONVERT(date, '20260101'))",
-    "dccs.WeigmentRpt_Dt < COALESCE(DATEADD(DAY, 1, @dateTo), DATEADD(DAY, 1, CONVERT(date, GETDATE())))",
+    "dccs.WeigmentRpt_Dt >= @dateFrom",
+    "dccs.WeigmentRpt_Dt < DATEADD(DAY, 1, @dateTo)",
     "mm.Material_Group_ID = 2",
     "dim.CostType = 'MAT'",
   ];

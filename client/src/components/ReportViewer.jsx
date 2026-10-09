@@ -26,6 +26,16 @@ function ReportViewer({ report }) {
   const [caneType, setCaneType] = useState("all");
   const isServiceRequest = report.queryModule === "service-request";
   const isPlantation = report.queryModule === "plantation";
+  const dateRangeError = !dateFrom && !dateTo
+    ? "Select a Date From and Date To before generating the report."
+    : !dateFrom
+    ? "Select a Date From before generating the report."
+    : !dateTo
+    ? "Select a Date To before generating the report."
+    : dateFrom > dateTo
+    ? "Date From cannot be later than Date To."
+    : "";
+  const hasValidDateRange = !dateRangeError;
 
   useEffect(() => {
     const source = isServiceRequest
@@ -75,6 +85,11 @@ function ReportViewer({ report }) {
   const filterLocations = locations;
 
   async function loadReport(variant = "detailed") {
+    if (!hasValidDateRange) {
+      setError(dateRangeError);
+      setShowResults(false);
+      return;
+    }
     setIsLoading(true);
     setError("");
     try {
@@ -103,6 +118,10 @@ function ReportViewer({ report }) {
 
   async function download(format) {
     if (exportingFormat) return;
+    if (!hasValidDateRange) {
+      setError(dateRangeError);
+      return;
+    }
     setExportingFormat(format);
     setError("");
     try {
@@ -181,6 +200,8 @@ function ReportViewer({ report }) {
                 <input
                   id="dateFrom"
                   type="date"
+                  max={dateTo || undefined}
+                  required
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
                 />
@@ -190,14 +211,19 @@ function ReportViewer({ report }) {
                 <input
                   id="dateTo"
                   type="date"
+                  min={dateFrom || undefined}
+                  required
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
                 />
               </div>
             </div>
+            {dateRangeError ? (
+              <p className="report-error" role="alert">{dateRangeError}</p>
+            ) : null}
             {report.id === "cane-supply" ? (
               <p className="report-filter-hint">
-                The Daily Detailed report covers one full month at a time. Choose a Date From and Date To within the same month (or leave both blank for the current month).
+                The Daily Detailed report covers one full month at a time. Choose a Date From and Date To within the same month.
               </p>
             ) : null}
           </div>
@@ -221,7 +247,7 @@ function ReportViewer({ report }) {
         </div>
 
         <div className="report-filter-actions">
-          <button type="submit" className="report-generate-btn">
+          <button type="submit" className="report-generate-btn" disabled={!hasValidDateRange || isLoading}>
             Generate Report
           </button>
         </div>
@@ -237,6 +263,11 @@ function ReportViewer({ report }) {
               {result.name}
               {result.monthLabel ? <span className="report-results-month"> — {result.monthLabel}</span> : null}
             </h3>
+            {result.dateRange ? (
+              <p className="report-applied-date-range">
+                Applied date range: <strong>{result.dateRange.dateFrom}</strong> to <strong>{result.dateRange.dateTo}</strong>
+              </p>
+            ) : null}
             <div className="report-variant-tabs" role="tablist" aria-label="Report view">
               {(report.variants || ["detailed"]).map((variant) => {
                 const mode = { id: variant, label: report.variantLabels?.[variant] || variant.replaceAll("-", " ") };

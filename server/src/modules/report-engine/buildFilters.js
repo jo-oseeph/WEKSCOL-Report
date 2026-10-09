@@ -1,8 +1,10 @@
 import sql from "mssql";
 import { httpError } from "../../shared/errors.js";
 import normalizeIdentifierSearch from "./normalizeIdentifierSearch.js";
+import validateDateRange from "./validateDateRange.js";
 
 export default function buildFilters(definition, query = {}) {
+  validateDateRange(query);
   const clauses = [];
   const parameters = {};
 

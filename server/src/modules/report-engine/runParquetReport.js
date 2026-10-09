@@ -1,6 +1,7 @@
 import { executeParquetQuery } from "../../db/parquetDb/connection.js";
 import { httpError } from "../../shared/errors.js";
 import normalizeIdentifierSearch from "./normalizeIdentifierSearch.js";
+import validateDateRange from "./validateDateRange.js";
 
 const REPORT_RULES = {
   "fertilizer-requests": { service: "fertilizer", status: "requests" },
@@ -78,15 +79,6 @@ function addIdentifierFilter(clauses, parameters, value) {
   parameters.push(normalized, normalized);
 }
 
-function isDateOnly(value) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return date.getUTCFullYear() === year
-    && date.getUTCMonth() === month - 1
-    && date.getUTCDate() === day;
-}
-
 function nextDateOnly(value) {
   const date = new Date(`${value}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + 1);
@@ -94,12 +86,11 @@ function nextDateOnly(value) {
 }
 
 function buildFilters(rule, query) {
+  const { dateFrom, dateTo } = validateDateRange(query);
   const clauses = rule.dataset === "qc"
     ? []
     : [rule.service === "fertilizer" ? FERTILIZER_FILTER : SEEDCANE_FILTER];
   const parameters = [rule.dataset === "qc" ? "__QC_PARQUET_PATH__" : "__PARQUET_PATH__"];
-  const dateFrom = query.dateFrom && query.dateFrom !== "all" ? query.dateFrom : undefined;
-  const dateTo = query.dateTo && query.dateTo !== "all" ? query.dateTo : undefined;
 
   addFilter(clauses, parameters, "Unit_name", query.unit);
   addFilter(clauses, parameters, "Sector_Name", query.sector);
@@ -107,19 +98,9 @@ function buildFilters(rule, query) {
   addFilter(clauses, parameters, "Section_Name", query.section);
   addIdentifierFilter(clauses, parameters, query.identifierSearch);
 
-  if (dateFrom && !isDateOnly(dateFrom)) {
-    throw httpError("dateFrom must be a valid date in YYYY-MM-DD format.", 400);
-  }
-  if (dateTo && !isDateOnly(dateTo)) {
-    throw httpError("dateTo must be a valid date in YYYY-MM-DD format.", 400);
-  }
-  if (dateFrom && dateTo && dateFrom > dateTo) {
-    throw httpError("dateFrom cannot be after dateTo.", 400);
-  }
-
   const dateColumn = rule.dateColumn || "Max_Created_On";
-  addFilter(clauses, parameters, dateColumn, dateFrom ? `${dateFrom}T00:00:00` : undefined, ">=");
-  addFilter(clauses, parameters, dateColumn, dateTo ? `${nextDateOnly(dateTo)}T00:00:00` : undefined, "<");
+  addFilter(clauses, parameters, dateColumn, `${dateFrom}T00:00:00`, ">=");
+  addFilter(clauses, parameters, dateColumn, `${nextDateOnly(dateTo)}T00:00:00`, "<");
 
   return { clauses, parameters };
 }
