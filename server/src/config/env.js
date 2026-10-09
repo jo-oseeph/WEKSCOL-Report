@@ -35,7 +35,8 @@ export default function loadConfig() {
       encrypt: process.env.REPORT_DB_ENCRYPT !== "false",
       trustServerCertificate: process.env.REPORT_DB_TRUST_SERVER_CERTIFICATE === "true",
       connectionTimeout: Math.min(Number(process.env.REPORT_DB_CONNECTION_TIMEOUT || 30000), 180000),
-      requestTimeout: Math.min(Number(process.env.REPORT_DB_REQUEST_TIMEOUT || 180000), 180000),
+      requestTimeout: Math.min(Number(process.env.REPORT_DB_REQUEST_TIMEOUT || 180000), 600000),
+      cancelTimeout: Math.min(Number(process.env.REPORT_DB_CANCEL_TIMEOUT || 15000), 60000),
     },
     session: {
       cookieName: "wescol_session",

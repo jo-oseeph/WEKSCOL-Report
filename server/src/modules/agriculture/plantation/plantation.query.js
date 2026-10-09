@@ -118,6 +118,12 @@ function detailedSql(parameters) {
         Unit_name,
         Measured_Cane_Area
     ),
+    field_keys AS (
+      SELECT DISTINCT
+        TRY_CONVERT(BIGINT, REPLACE(UPPER(LTRIM(RTRIM(Rec_Field_No))), 'FN-', '')) AS LeadOpportunity_ID
+      FROM ccs_field
+      WHERE TRY_CONVERT(BIGINT, REPLACE(UPPER(LTRIM(RTRIM(Rec_Field_No))), 'FN-', '')) IS NOT NULL
+    ),
     field_master AS (
       SELECT
         'FN-' + CAST(v.LeadOpportunity_ID AS VARCHAR(50)) AS Lead_Number,
@@ -126,6 +132,8 @@ function detailedSql(parameters) {
         v.Cordinates,
         CAST(v.Actual_Date_Of_Plant_Ratoon AS DATE) AS Actual_Date_Of_Plant_Ratoon
       FROM dbo.VW_BP_LOC_ATTR_NEW v
+      INNER JOIN field_keys k
+        ON v.LeadOpportunity_ID = k.LeadOpportunity_ID
     )
     SELECT
       cf.Rec_Field_No,

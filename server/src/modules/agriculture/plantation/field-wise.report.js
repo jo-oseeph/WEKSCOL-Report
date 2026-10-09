@@ -7,8 +7,8 @@ export default {
   queryModule: "plantation",
   variants: ["detailed", "summary"],
   variantLabels: {
-    detailed: "Field-Wise Report",
-    summary: "Summary: Month-Wise",
+    detailed: "Detailed Report",
+    summary: "Summary Report",
   },
   summaryGroups: ["unit"],
   params: [
