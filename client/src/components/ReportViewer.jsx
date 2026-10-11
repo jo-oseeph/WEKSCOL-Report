@@ -25,6 +25,7 @@ function ReportViewer({ report }) {
   const [error, setError] = useState("");
   const [caneType, setCaneType] = useState("all");
   const isServiceRequest = report.queryModule === "service-request";
+  const isBilling = report.queryModule === "billing";
   const isPlantation = report.queryModule === "plantation";
   const dateRangeError = !dateFrom && !dateTo
     ? "Select a Date From and Date To before generating the report."
@@ -40,6 +41,8 @@ function ReportViewer({ report }) {
   useEffect(() => {
     const source = isServiceRequest
       ? "investment"
+      : isBilling
+      ? "billing"
       : isPlantation
       ? "plantation"
       : ["cane-supply", "daily-weighment"].includes(report.id)
@@ -53,11 +56,11 @@ function ReportViewer({ report }) {
         setCaneTypes(data.caneTypes || []);
       })
       .catch((requestError) => setError(requestError.message));
-  }, [report.id, isServiceRequest, isPlantation]);
+  }, [report.id, isServiceRequest, isBilling, isPlantation]);
 
   const query = useMemo(() => {
     const [first, second, zone, section] = locationSelection;
-    if (isServiceRequest || isPlantation || ["cane-supply", "daily-weighment", "overdue"].includes(report.id)) {
+    if (isServiceRequest || isBilling || isPlantation || ["cane-supply", "daily-weighment", "overdue"].includes(report.id)) {
       return {
         unit: first,
         sector: second,
@@ -70,7 +73,7 @@ function ReportViewer({ report }) {
       };
     }
     return { plant: first, region: second, zone, section, dateFrom, dateTo, identifierSearch };
-  }, [locationSelection, caneType, dateFrom, dateTo, identifierSearch, report.id, isServiceRequest, isPlantation]);
+  }, [locationSelection, caneType, dateFrom, dateTo, identifierSearch, report.id, isServiceRequest, isBilling, isPlantation]);
 
   // Strips "all"/empty values so they are not sent to the backend as filters.
   const cleanParams = useMemo(() => {
@@ -81,7 +84,7 @@ function ReportViewer({ report }) {
     return params;
   }, [query]);
 
-  const isHarvesting = isServiceRequest || isPlantation || ["cane-supply", "daily-weighment", "overdue"].includes(report.id);
+  const isHarvesting = isServiceRequest || isBilling || isPlantation || ["cane-supply", "daily-weighment", "overdue"].includes(report.id);
   const filterLocations = locations;
 
   async function loadReport(variant = "detailed") {

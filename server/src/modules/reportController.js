@@ -9,6 +9,7 @@ import { cached } from "./report-engine/filtersCache.js";
 import { loadInvestmentFilters } from "./agriculture/investment/investment.query.js";
 import { loadHarvestingFilters } from "./agriculture/harvesting/harvesting.query.js";
 import { loadPlantationFilters } from "./agriculture/plantation/plantation.query.js";
+import { loadBillingFilters } from "./agriculture/billing/billing.query.js";
 
 function csv(value) {
   const text = value == null ? "" : String(value);
@@ -175,6 +176,10 @@ export default function createReportsController() {
           investment: {
             cacheKey: "investment-locations",
             loader: loadInvestmentFilters,
+          },
+          billing: {
+            cacheKey: "billing-locations",
+            loader: loadBillingFilters,
           },
         };
         const selectedSource = filterSources[source] || filterSources.investment;
