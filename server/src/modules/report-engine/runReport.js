@@ -7,6 +7,7 @@ import { runInvestmentQuery } from "../agriculture/investment/investment.query.j
 import { runHarvestingQuery } from "../agriculture/harvesting/harvesting.query.js";
 import { runServiceRequestQuery } from "../agriculture/service-request/service-request.query.js";
 import { runPlantationQuery } from "../agriculture/plantation/plantation.query.js";
+import { runBillingQuery } from "../agriculture/billing/billing.query.js";
 import { runParquetReport } from "./runParquetReport.js";
 import validateDateRange from "./validateDateRange.js";
 
@@ -30,6 +31,7 @@ export default async function runReport(reportId, query = {}) {
     investment: runInvestmentQuery,
     "service-request": runServiceRequestQuery,
     plantation: runPlantationQuery,
+    billing: runBillingQuery,
   };
   const queryRunner = queryRunners[definition.queryModule] || runInvestmentQuery;
   if (definition.backend !== "parquet") {

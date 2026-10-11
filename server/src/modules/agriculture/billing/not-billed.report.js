@@ -1,0 +1,19 @@
+export default {
+  id: "billing-not-billed",
+  name: "Not Billed",
+  description: "Supply slips with no billed material quantity.",
+  categoryId: "agriculture",
+  subcategoryId: "billing",
+  queryModule: "billing",
+  variants: ["detailed", "summary"],
+  variantLabels: { detailed: "Detailed Report", summary: "Summary Report" },
+  summaryGroups: ["unit", "sector", "zone", "section"],
+  params: [
+    { name: "unit", type: "string", sql: "Sup_Unit_name = @unit" },
+    { name: "sector", type: "string", sql: "Sup_Sector_Name = @sector" },
+    { name: "zone", type: "string", sql: "Sup_Zone_Name = @zone" },
+    { name: "section", type: "string", sql: "Sup_Section_Name = @section" },
+    { name: "dateFrom", type: "date", sql: "GROSS_DT1 >= @dateFrom" },
+    { name: "dateTo", type: "date", sql: "GROSS_DT1 < DATEADD(DAY, 1, @dateTo)" },
+  ],
+};
