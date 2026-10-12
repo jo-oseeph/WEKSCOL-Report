@@ -189,8 +189,12 @@ function ReportViewer({ report }) {
             selection={locationSelection}
             onChange={setLocationSelection}
             locations={filterLocations}
-            labels={isHarvesting ? ["Unit", "Sector", "Zone", "Section"] : undefined}
-            fields={isHarvesting ? ["unit", "sector", "zone", "section"] : undefined}
+            labels={isHarvesting
+              ? ["Unit", "Sector", "Zone", "Section"]
+              : undefined}
+            fields={isHarvesting
+              ? ["unit", "sector", "zone", "section"]
+              : undefined}
           />
         </div>
 
@@ -281,6 +285,7 @@ function ReportViewer({ report }) {
                 Applied date range: <strong>{result.dateRange.dateFrom}</strong> to <strong>{result.dateRange.dateTo}</strong>
               </p>
             ) : null}
+
             <div className="report-variant-tabs" role="tablist" aria-label="Report view">
               {(report.variants || ["detailed"]).map((variant) => {
                 const mode = { id: variant, label: report.variantLabels?.[variant] || variant.replaceAll("-", " ") };
@@ -300,7 +305,6 @@ function ReportViewer({ report }) {
                 );
               })}
             </div>
-            {activeVariant !== "detailed" ? <span className="report-summary-group-label">Grouped to: {result.groupLabel || "Unit"}</span> : null}
           </div>
           <div className="report-results-toolbar">
             <span className="report-results-count">

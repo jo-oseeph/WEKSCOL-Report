@@ -7,6 +7,7 @@ const SUMMARY_PARENT_FILTERS = {
   zone: ["unit", "sector"],
   section: ["unit", "sector", "zone"],
 };
+const LOCATION_SUMMARY_GROUPS = ["unit", "sector", "zone", "section"];
 
 export default function resolveVariant(definition, query = {}) {
   const variant = query.variant || "detailed";
@@ -18,7 +19,11 @@ export default function resolveVariant(definition, query = {}) {
     ? query.group || inferLocationGroup(query)
     : query.group || (variant !== "detailed" ? "unit" : null);
 
-  if (variant !== "detailed" && !definition.summaryGroups.includes(group)) {
+  const supportedGroups = ["harvesting", "service-request", "plantation"].includes(definition.queryModule)
+    ? LOCATION_SUMMARY_GROUPS
+    : definition.summaryGroups || [];
+
+  if (variant !== "detailed" && !supportedGroups.includes(group)) {
     throw httpError(`Unsupported summary group: ${group}.`, 400);
   }
 
@@ -35,7 +40,7 @@ export function scopeSummaryQuery(query = {}, group = "unit") {
   );
 }
 
-function inferLocationGroup(query) {
+export function inferLocationGroup(query) {
   if (query.section && query.section !== "all") return "section";
   if (query.zone && query.zone !== "all") return "zone";
   if (query.sector && query.sector !== "all") return "sector";

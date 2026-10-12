@@ -1,19 +1,27 @@
 import { executeWarehouseQuery } from "../../../db/warehouseDb/connection.js";
 
-const GROUP_COLUMNS = {
+export const GROUP_COLUMNS = {
   unit: ["Unit_name"],
   sector: ["Unit_name", "Sector_Name"],
   zone: ["Unit_name", "Sector_Name", "Zone_Name"],
   section: ["Unit_name", "Sector_Name", "Zone_Name", "Section_Name"],
 };
 
-export function plantationSummaryColumns(group = "unit") {
+export function getSummaryGroupColumns(group = "unit") {
+  return GROUP_COLUMNS[group] || GROUP_COLUMNS.unit;
+}
+
+export function getSummaryResultColumns(group = "unit") {
   return [
     "Delivery_Month",
-    ...(GROUP_COLUMNS[group] || GROUP_COLUMNS.unit),
+    ...getSummaryGroupColumns(group),
     "No_of_Fields",
     "Total_Acreage",
   ];
+}
+
+export function plantationSummaryColumns(group = "unit") {
+  return getSummaryResultColumns(group);
 }
 
 const SECTOR_SQL = `CASE
@@ -176,8 +184,8 @@ function detailedSql(parameters) {
     ORDER BY cf.Delivery_Date, cf.Rec_Field_No`;
 }
 
-function summarySql(parameters, group) {
-  const groupColumns = GROUP_COLUMNS[group] || GROUP_COLUMNS.unit;
+export function summarySql(parameters, group = "unit") {
+  const groupColumns = getSummaryGroupColumns(group);
   const baseGroupSelect = groupColumns.map((column) => `        ${column}`).join(",\n");
   const baseGroupBy = groupColumns.map((column) => `        ${column}`).join(",\n");
   const summaryGroupSelect = groupColumns.map((column) => `      b.${column} AS ${column}`).join(",\n");
@@ -218,7 +226,10 @@ export async function runPlantationQuery({ variant, group, parameters }) {
   const text = variant === "detailed"
     ? detailedSql(boundParameters)
     : summarySql(boundParameters, group);
-  return executeWarehouseQuery(text, boundParameters);
+  const result = await executeWarehouseQuery(text, boundParameters);
+  return variant === "summary"
+    ? { ...result, columns: getSummaryResultColumns(group) }
+    : result;
 }
 
 export async function loadPlantationFilters() {
