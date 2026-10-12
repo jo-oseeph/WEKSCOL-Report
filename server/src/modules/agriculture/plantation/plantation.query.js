@@ -169,61 +169,26 @@ function summarySql(parameters) {
       SELECT
         Rec_Field_No,
         DATEFROMPARTS(YEAR(WeigmentRpt_Dt), MONTH(WeigmentRpt_Dt), 1) AS Month_Sort,
-        Region_Name,
-        Sector_Name,
-        Zone_Name,
-        Section_Name,
-        SubLocation,
         Unit_name,
         MAX(TRY_CAST(Measured_Cane_Area AS DECIMAL(18,3))) AS Measured_Cane_Area
       FROM base
       GROUP BY
         Rec_Field_No,
         DATEFROMPARTS(YEAR(WeigmentRpt_Dt), MONTH(WeigmentRpt_Dt), 1),
-        Region_Name,
-        Sector_Name,
-        Zone_Name,
-        Section_Name,
-        SubLocation,
         Unit_name
-    ),
-    first_delivery AS (
-      SELECT
-        Rec_Field_No,
-        MIN(Month_Sort) AS First_Month
-      FROM by_field_month
-      GROUP BY Rec_Field_No
     )
     SELECT
       LEFT(DATENAME(MONTH, b.Month_Sort), 3) + ' ' + CONVERT(VARCHAR(4), YEAR(b.Month_Sort)) AS Delivery_Month,
       b.Unit_name,
-      b.Sector_Name,
-      b.Region_Name,
-      b.Zone_Name,
-      b.Section_Name,
-      b.SubLocation,
-      COUNT(*) AS No_of_Fields,
+      COUNT(DISTINCT b.Rec_Field_No) AS No_of_Fields,
       SUM(b.Measured_Cane_Area) AS Total_Acreage
     FROM by_field_month b
-    INNER JOIN first_delivery f
-      ON f.Rec_Field_No = b.Rec_Field_No
-      AND f.First_Month = b.Month_Sort
     GROUP BY
       b.Month_Sort,
-      b.Unit_name,
-      b.Sector_Name,
-      b.Region_Name,
-      b.Zone_Name,
-      b.Section_Name,
-      b.SubLocation
+      b.Unit_name
     ORDER BY
       b.Month_Sort,
-      b.Unit_name,
-      b.Sector_Name,
-      b.Region_Name,
-      b.Zone_Name,
-      b.Section_Name,
-      b.SubLocation`;
+      b.Unit_name`;
 }
 
 export async function runPlantationQuery({ variant, parameters }) {
