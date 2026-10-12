@@ -184,19 +184,14 @@ checked AS (
         b.Rec_Unit_name, b.Rec_Sector_Name, b.Rec_Zone_Name, b.Rec_Section_Name,
         b.Rec_SubLocation, b.Rec_Village_Name,
         st.Net_Weight, st.Slip_Billed_Qty, b.Delivered_Qty, st.Billed_Diff,
-        b.SC_Actual_Rate, b.SC_Actual_Cost, b.TZ_Actual_Rate, b.TZ_Actual_Cost,
-        CAST(ISNULL(TRY_CONVERT(DECIMAL(18,2), b.SC_Actual_Cost), 0)
-             - ISNULL(b.Delivered_Qty, 0) * ISNULL(TRY_CONVERT(DECIMAL(18,4), b.SC_Actual_Rate), 0) AS DECIMAL(18,2)) AS SC_Cost_Check,
-        CAST(ISNULL(TRY_CONVERT(DECIMAL(18,2), b.TZ_Actual_Cost), 0)
-             - ISNULL(b.Delivered_Qty, 0) * ISNULL(TRY_CONVERT(DECIMAL(18,4), b.TZ_Actual_Rate), 0) AS DECIMAL(18,2)) AS TZ_Cost_Check
+        b.SC_Actual_Rate, b.SC_Actual_Cost, b.TZ_Actual_Rate, b.TZ_Actual_Cost
     FROM status st
     JOIN billed b ON b.CCS_Slip = st.CCS_Slip
     WHERE st.Billing_Status = 'Fully billed'
 )
 
 SELECT
-    c.*,
-    CASE WHEN ABS(c.SC_Cost_Check) > 30 OR ABS(c.TZ_Cost_Check) > 30 THEN 'CHECK' ELSE 'OK' END AS Cost_Flag
+    c.*
 FROM checked c
 ORDER BY c.Sup_Unit_name, c.Sup_Sector_Name, c.Sup_Zone_Name, c.Sup_Section_Name,
          c.Sup_SubLocation, c.Sup_Village_Name, c.GROSS_DT1, c.CCS_Slip, c.DN_Number;
