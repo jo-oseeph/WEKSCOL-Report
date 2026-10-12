@@ -19,6 +19,7 @@ function ReportViewer({ report }) {
   const [caneTypes, setCaneTypes] = useState([]);
   const [result, setResult] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [reportSearch, setReportSearch] = useState("");
   const [activeVariant, setActiveVariant] = useState("detailed");
   const [isLoading, setIsLoading] = useState(false);
   const [exportingFormat, setExportingFormat] = useState("");
@@ -150,15 +151,24 @@ function ReportViewer({ report }) {
     }
   }
 
-  const totalPages = result ? Math.max(1, Math.ceil(result.rows.length / RESULTS_PER_PAGE)) : 1;
+  const filteredRows = useMemo(() => {
+    if (!result) return [];
+    const searchTerm = reportSearch.trim().toLowerCase();
+    if (!searchTerm) return result.rows;
+
+    return result.rows.filter((row) => result.columns.some((column) => (
+      row[column] === null || row[column] === undefined ? "" : String(row[column])
+    ).toLowerCase().includes(searchTerm)));
+  }, [result, reportSearch]);
+  const totalPages = result ? Math.max(1, Math.ceil(filteredRows.length / RESULTS_PER_PAGE)) : 1;
   const visibleRows = result
-    ? result.rows.slice((currentPage - 1) * RESULTS_PER_PAGE, currentPage * RESULTS_PER_PAGE)
+    ? filteredRows.slice((currentPage - 1) * RESULTS_PER_PAGE, currentPage * RESULTS_PER_PAGE)
     : [];
-  const firstVisibleRow = result && result.rows.length > 0
+  const firstVisibleRow = filteredRows.length > 0
     ? (currentPage - 1) * RESULTS_PER_PAGE + 1
     : 0;
   const lastVisibleRow = result
-    ? Math.min(currentPage * RESULTS_PER_PAGE, result.rows.length)
+    ? Math.min(currentPage * RESULTS_PER_PAGE, filteredRows.length)
     : 0;
 
   function goToPage(page) {
@@ -294,8 +304,21 @@ function ReportViewer({ report }) {
           </div>
           <div className="report-results-toolbar">
             <span className="report-results-count">
-              Showing {firstVisibleRow}–{lastVisibleRow} of {result.rows.length} record{result.rows.length === 1 ? "" : "s"}
+              Showing {firstVisibleRow}–{lastVisibleRow} of {filteredRows.length} record{filteredRows.length === 1 ? "" : "s"}
             </span>
+            <label className="report-results-search">
+              <span className="sr-only">Search report data</span>
+              <input
+                type="search"
+                value={reportSearch}
+                onChange={(event) => {
+                  setReportSearch(event.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Search report data..."
+                aria-label="Search report data"
+              />
+            </label>
             <div className="report-results-actions">
               <button type="button" className="report-action-btn" onClick={() => download("pdf")} disabled={Boolean(exportingFormat)}>
                 {exportingFormat === "pdf" ? "Preparing PDF…" : "Export PDF"}
@@ -312,9 +335,11 @@ function ReportViewer({ report }) {
             </div>
           </div>
 
-          {result.rows.length === 0 ? (
+          {filteredRows.length === 0 ? (
             <div className="report-empty-state">
-              No records found for the selected filters or date range.
+              {reportSearch.trim()
+                ? "No matching records found in the generated report."
+                : "No records found for the selected filters or date range."}
             </div>
           ) : (
             <div className="report-table-section">
