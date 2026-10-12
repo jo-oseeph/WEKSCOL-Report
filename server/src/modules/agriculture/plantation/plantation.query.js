@@ -1,5 +1,21 @@
 import { executeWarehouseQuery } from "../../../db/warehouseDb/connection.js";
 
+const GROUP_COLUMNS = {
+  unit: ["Unit_name"],
+  sector: ["Unit_name", "Sector_Name"],
+  zone: ["Unit_name", "Sector_Name", "Zone_Name"],
+  section: ["Unit_name", "Sector_Name", "Zone_Name", "Section_Name"],
+};
+
+export function plantationSummaryColumns(group = "unit") {
+  return [
+    "Delivery_Month",
+    ...(GROUP_COLUMNS[group] || GROUP_COLUMNS.unit),
+    "No_of_Fields",
+    "Total_Acreage",
+  ];
+}
+
 const SECTOR_SQL = `CASE
   WHEN vw.Region_Name = 'KABRAS CENTRAL' THEN
     CASE WHEN vw.Zone_Name IN ('CENTRAL ZONE-B','EASTERN ZONE') THEN 'KABRAS B' ELSE 'KABRAS A' END
@@ -160,7 +176,13 @@ function detailedSql(parameters) {
     ORDER BY cf.Delivery_Date, cf.Rec_Field_No`;
 }
 
-function summarySql(parameters) {
+function summarySql(parameters, group) {
+  const groupColumns = GROUP_COLUMNS[group] || GROUP_COLUMNS.unit;
+  const baseGroupSelect = groupColumns.map((column) => `        ${column}`).join(",\n");
+  const baseGroupBy = groupColumns.map((column) => `        ${column}`).join(",\n");
+  const summaryGroupSelect = groupColumns.map((column) => `      b.${column} AS ${column}`).join(",\n");
+  const summaryGroupBy = groupColumns.map((column) => `      b.${column}`).join(",\n");
+
   return `
     WITH base AS (
       ${baseCcsSql(parameters)}
@@ -169,33 +191,33 @@ function summarySql(parameters) {
       SELECT
         Rec_Field_No,
         DATEFROMPARTS(YEAR(WeigmentRpt_Dt), MONTH(WeigmentRpt_Dt), 1) AS Month_Sort,
-        Unit_name,
+${baseGroupSelect},
         MAX(TRY_CAST(Measured_Cane_Area AS DECIMAL(18,3))) AS Measured_Cane_Area
       FROM base
       GROUP BY
         Rec_Field_No,
         DATEFROMPARTS(YEAR(WeigmentRpt_Dt), MONTH(WeigmentRpt_Dt), 1),
-        Unit_name
+${baseGroupBy}
     )
     SELECT
       LEFT(DATENAME(MONTH, b.Month_Sort), 3) + ' ' + CONVERT(VARCHAR(4), YEAR(b.Month_Sort)) AS Delivery_Month,
-      b.Unit_name,
+${summaryGroupSelect},
       COUNT(DISTINCT b.Rec_Field_No) AS No_of_Fields,
       SUM(b.Measured_Cane_Area) AS Total_Acreage
     FROM by_field_month b
     GROUP BY
       b.Month_Sort,
-      b.Unit_name
+${summaryGroupBy}
     ORDER BY
       b.Month_Sort,
-      b.Unit_name`;
+${summaryGroupBy}`;
 }
 
-export async function runPlantationQuery({ variant, parameters }) {
+export async function runPlantationQuery({ variant, group, parameters }) {
   const boundParameters = { dateFrom: null, dateTo: null, ...parameters };
   const text = variant === "detailed"
     ? detailedSql(boundParameters)
-    : summarySql(boundParameters);
+    : summarySql(boundParameters, group);
   return executeWarehouseQuery(text, boundParameters);
 }
 

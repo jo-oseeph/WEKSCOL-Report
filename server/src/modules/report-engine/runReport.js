@@ -1,12 +1,15 @@
 import { loadModules } from "../loadModules.js";
 import buildFilters from "./buildFilters.js";
-import resolveVariant from "./resolveVariant.js";
+import resolveVariant, { scopeSummaryQuery } from "./resolveVariant.js";
 import normalizeRows from "./normalizeRows.js";
 import { httpError } from "../../shared/errors.js";
 import { runInvestmentQuery } from "../agriculture/investment/investment.query.js";
 import { runHarvestingQuery } from "../agriculture/harvesting/harvesting.query.js";
 import { runServiceRequestQuery } from "../agriculture/service-request/service-request.query.js";
-import { runPlantationQuery } from "../agriculture/plantation/plantation.query.js";
+import {
+  plantationSummaryColumns,
+  runPlantationQuery,
+} from "../agriculture/plantation/plantation.query.js";
 import { runBillingQuery } from "../agriculture/billing/billing.query.js";
 import { runParquetReport } from "./runParquetReport.js";
 import validateDateRange from "./validateDateRange.js";
@@ -18,13 +21,16 @@ export default async function runReport(reportId, query = {}) {
 
   const dateRange = validateDateRange(query);
   const { variant, group } = resolveVariant(definition, query);
+  const effectiveQuery = definition.queryModule === "plantation" && variant !== "detailed"
+    ? scopeSummaryQuery(query, group)
+    : query;
   let filters = { parameters: {} };
   let result;
   if (definition.backend === "parquet") {
     result = await runParquetReport({ reportId, variant, group, query });
     filters = { parameters: result.parameters };
   } else {
-    filters = buildFilters(definition, query);
+    filters = buildFilters(definition, effectiveQuery);
   }
   const queryRunners = {
     harvesting: runHarvestingQuery,
@@ -44,7 +50,10 @@ export default async function runReport(reportId, query = {}) {
     });
   }
   const rows = normalizeRows(result.rows);
-  const monthSource = query.dateFrom || new Date().toISOString().slice(0, 10);
+  const columns = definition.queryModule === "plantation" && variant !== "detailed"
+    ? plantationSummaryColumns(group)
+    : result.columns;
+  const monthSource = effectiveQuery.dateFrom || new Date().toISOString().slice(0, 10);
   const monthLabel = definition.id === "cane-supply"
     ? new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${monthSource.slice(0, 7)}-01T00:00:00Z`))
     : null;
@@ -61,7 +70,7 @@ export default async function runReport(reportId, query = {}) {
     monthLabel,
     dateRange,
     filters: filters.parameters,
-    columns: result.columns,
+    columns,
     rows,
   };
 }

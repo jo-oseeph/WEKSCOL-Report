@@ -10,7 +10,7 @@ export default {
     detailed: "Detailed Report",
     summary: "Summary Report",
   },
-  summaryGroups: ["unit"],
+  summaryGroups: ["unit", "sector", "zone", "section"],
   params: [
     { name: "unit", type: "string", sql: "Unit_name = @unit" },
     { name: "sector", type: "string", sql: "Sector_Name = @sector" },
