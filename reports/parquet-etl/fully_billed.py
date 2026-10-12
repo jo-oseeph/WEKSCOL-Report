@@ -1,10 +1,6 @@
 """
-Extract the fertilizer issuance validation quality-check dataset from SQL Server
+Extract the fully billed validation quality-check dataset from SQL Server
 and save the final result as a separate Parquet file.
-
-This keeps the senior analyst's SQL logic, including its temporary tables,
-pre-aggregated PGI data, OUTER APPLY process-order logic, and final quality
-checks. It does not modify the main report_base.parquet dataset.
 """
 
 import os
