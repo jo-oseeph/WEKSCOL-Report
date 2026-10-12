@@ -247,13 +247,9 @@ def main():
     with get_connection() as conn:
         print("building fully billed quality-check temp tables...")
 
-        cursor = conn.cursor()
-        cursor.execute(BUILD_SQL)
-        cursor.close()
-
         print("running fully billed validation...")
 
-        df = pd.read_sql(FINAL_SQL, conn)
+        df = pd.read_sql(BUILD_SQL, conn)
 
     df.to_parquet(OUTPUT_PATH, index=False)
 
