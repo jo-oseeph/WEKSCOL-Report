@@ -15,9 +15,7 @@ export default function resolveVariant(definition, query = {}) {
     throw httpError(`Unsupported report variant: ${variant}.`, 400);
   }
 
-  const group = ["harvesting", "service-request", "plantation"].includes(definition.queryModule)
-    ? query.group || inferLocationGroup(query)
-    : query.group || (variant !== "detailed" ? "unit" : null);
+  const group = query.group || (variant !== "detailed" ? inferLocationGroup(query) : null);
 
   const supportedGroups = ["harvesting", "service-request", "plantation"].includes(definition.queryModule)
     ? LOCATION_SUMMARY_GROUPS
@@ -42,8 +40,8 @@ export function scopeSummaryQuery(query = {}, group = "unit") {
 
 export function inferLocationGroup(query) {
   if (query.section && query.section !== "all") return "section";
-  if (query.zone && query.zone !== "all") return "zone";
-  if (query.sector && query.sector !== "all") return "sector";
-  if (query.unit && query.unit !== "all") return "unit";
+  if (query.zone && query.zone !== "all") return "section";
+  if (query.sector && query.sector !== "all") return "zone";
+  if (query.unit && query.unit !== "all") return "sector";
   return "unit";
 }

@@ -73,7 +73,7 @@ function ReportViewer({ report }) {
         identifierSearch,
       };
     }
-    return { plant: first, region: second, zone, section, dateFrom, dateTo, identifierSearch };
+    return { unit: first, sector: second, zone, section, dateFrom, dateTo, identifierSearch };
   }, [locationSelection, caneType, dateFrom, dateTo, identifierSearch, report.id, isServiceRequest, isBilling, isPlantation]);
 
   // Strips "all"/empty values so they are not sent to the backend as filters.

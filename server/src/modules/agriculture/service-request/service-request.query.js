@@ -18,6 +18,8 @@ const REPORT_RULES = {
 
 const SECTOR = `CASE WHEN B.Region_Name = 'KABRAS CENTRAL' THEN CASE WHEN B.Zone_Name IN ('CENTRAL ZONE-B','EASTERN ZONE') THEN 'KABRAS B' ELSE 'KABRAS A' END WHEN B.Region_Name IN ('MISIKHU','NAITIRI','KITALE','BUSIA','NZOIA','MAGUT','BUTERE') THEN B.Region_Name WHEN B.Region_Name IN ('MOI UNIVERSITY','TURBO') THEN 'SELIA' WHEN B.Region_Name IN ('DOROFU','DOROFU KHALABA') THEN 'KHALABA' WHEN B.Region_Name IN ('KABRAS WEST','KABRAS NORTH') THEN 'KABRAS A' WHEN B.Region_Name IN ('KAKAMEGA','BUKURA','KABRAS SOUTH','KAIMOSI','KABRAS') THEN 'KABRAS B' WHEN B.Region_Name = 'SIAYA' THEN 'LAKE AGRO' WHEN B.Region_Name IN ('MIWANI','KERICHO','CHEMELIL') THEN 'NYANDO' WHEN B.Region_Name IN ('Eastern','Northern','Southern','Western') THEN B.Region_Name WHEN B.Region_Name = 'Central' THEN 'Nzoia Nucleus' ELSE 'NOT MAPPED' END`;
 
+const FILTER_SECTOR = SECTOR.replaceAll("B.", "vw.");
+
 function predicates(clauses, joiner = "WHERE") {
   return clauses.length ? `${joiner} ${clauses.join(" AND ")}` : "";
 }
@@ -45,7 +47,7 @@ ${finalSql};`;
 }
 
 function detailedSql(status) {
-  return `SELECT B.Field_Number,B.OVERLAP,B.ID_Number,B.IPRS,B.First_Name,B.Description,B.Region_Name,${SECTOR} AS Sector_Name,B.Zone_Name,B.Section_Name,B.SubLocation,B.Unit_name AS Unit,B.Village_Name,CASE WHEN B.Qty_Fin > 0 AND B.Qty_Agri > 0 AND B.Qty_Fin = B.Qty_Agri THEN 'Finance Approved' WHEN B.Qty_Agri > 0 AND (B.Qty_Fin IS NULL OR B.Qty_Fin = 0) THEN 'Agri Approved' WHEN B.Qty_Agri IS NULL OR B.Qty_Agri = 0 THEN 'Pending Agriculture Approval' ELSE 'Pending' END AS [Approval Status],B.Measured_Cane_Area,1 AS No_of_SR,B.Qty_Requested,B.Qty_Agri,B.Qty_Fin,P.Qty_Allocated,P.Qty_Delivered,P.NO_OF_PGIs,B.Qty_Requested-ISNULL(P.Qty_Delivered,0) AS Qty_Pending,DATEDIFF(DAY,B.Created_On,GETDATE()) AS Ageing_Days,B.Created_On AS Min_Created_On,B.Created_On AS Max_Created_On,B.Current_Crop_Cycle,B.Planned_Date_Of_PC_Ratoon,B.Actual_Date_Of_Plant_Ratoon,B.Contract_Number,B.Is_Synch,B.Is_Company FROM #SR_BASE B LEFT JOIN #SR_PGI P ON B.Process_Order_Material_ID=P.Process_Order_Material_ID ${predicates([statusPredicate(status)])}`;
+  return `SELECT B.Field_Number,B.OVERLAP,B.ID_Number,B.IPRS,B.First_Name,B.Description,${SECTOR} AS Sector_Name,B.Zone_Name,B.Section_Name,B.SubLocation,B.Unit_name AS Unit,B.Village_Name,CASE WHEN B.Qty_Fin > 0 AND B.Qty_Agri > 0 AND B.Qty_Fin = B.Qty_Agri THEN 'Finance Approved' WHEN B.Qty_Agri > 0 AND (B.Qty_Fin IS NULL OR B.Qty_Fin = 0) THEN 'Agri Approved' WHEN B.Qty_Agri IS NULL OR B.Qty_Agri = 0 THEN 'Pending Agriculture Approval' ELSE 'Pending' END AS [Approval Status],B.Measured_Cane_Area,1 AS No_of_SR,B.Qty_Requested,B.Qty_Agri,B.Qty_Fin,P.Qty_Allocated,P.Qty_Delivered,P.NO_OF_PGIs,B.Qty_Requested-ISNULL(P.Qty_Delivered,0) AS Qty_Pending,DATEDIFF(DAY,B.Created_On,GETDATE()) AS Ageing_Days,B.Created_On AS Min_Created_On,B.Created_On AS Max_Created_On,B.Current_Crop_Cycle,B.Planned_Date_Of_PC_Ratoon,B.Actual_Date_Of_Plant_Ratoon,B.Contract_Number,B.Is_Synch,B.Is_Company FROM #SR_BASE B LEFT JOIN #SR_PGI P ON B.Process_Order_Material_ID=P.Process_Order_Material_ID ${predicates([statusPredicate(status)])}`;
 }
 
 export async function runServiceRequestQuery({ reportId, variant, group, clauses, parameters }) {
@@ -54,7 +56,7 @@ export async function runServiceRequestQuery({ reportId, variant, group, clauses
   const boundParameters = { dateFrom: null, dateTo: null, ...parameters };
   const detail = detailedSql(rule.status);
   if (variant === "detailed") {
-    return executeWarehouseQuery(baseSql(rule.type, `SELECT * FROM (${detail}) AS service_request_result ${predicates(clauses, "WHERE")} ORDER BY Region_Name,Sector_Name,Field_Number`), boundParameters);
+    return executeWarehouseQuery(baseSql(rule.type, `SELECT * FROM (${detail}) AS service_request_result ${predicates(clauses, "WHERE")} ORDER BY Sector_Name,Field_Number`), boundParameters);
   }
   const groupColumns = GROUP_COLUMNS[group];
   const groupSql = groupColumns.map((name) => `[${name}]`).join(",");
@@ -64,5 +66,5 @@ export async function runServiceRequestQuery({ reportId, variant, group, clauses
 }
 
 export async function loadServiceRequestFilters() {
-  return executeWarehouseQuery("SELECT DISTINCT PlantName2 AS unit, Region_Name AS sector, Zone_Name AS zone, Section_Name AS section FROM vW_Village_Related_Data ORDER BY unit, sector, zone, section");
+  return executeWarehouseQuery(`SELECT DISTINCT PlantName2 AS unit, ${FILTER_SECTOR} AS sector, Zone_Name AS zone, Section_Name AS section FROM vW_Village_Related_Data vw ORDER BY unit, sector, zone, section`);
 }
