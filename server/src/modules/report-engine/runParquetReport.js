@@ -4,6 +4,46 @@ import normalizeIdentifierSearch from "./normalizeIdentifierSearch.js";
 import validateDateRange from "./validateDateRange.js";
 
 const REPORT_RULES = {
+  "billing-fully-billed": {
+    dataset: "fully-billed",
+    dateColumn: "GROSS_DT1",
+    columns: [
+      "Sup_Unit_name",
+      "Sup_Sector_Name",
+      "Sup_Zone_Name",
+      "Sup_Section_Name",
+      "CCS_Slip",
+      "GROSS_DT1",
+      "Billing_Status",
+      "Sup_Field_No",
+      "Sup_Farmer_Name",
+      "Sup_Farmer_Id",
+      "Sup_Field_Area",
+      "Sup_SubLocation",
+      "Sup_Village_Name",
+      "DN_Number",
+      "DN_Date",
+      "Rec_Field_No",
+      "Rec_Farmer_Name",
+      "Rec_Farmer_Id",
+      "Rec_Field_Area",
+      "Rec_Unit_name",
+      "Rec_Sector_Name",
+      "Rec_Zone_Name",
+      "Rec_Section_Name",
+      "Rec_SubLocation",
+      "Rec_Village_Name",
+      "Net_Weight",
+      "Slip_Billed_Qty",
+      "Delivered_Qty",
+      "Billed_Diff",
+      "SC_Actual_Rate",
+      "SC_Actual_Cost",
+      "TZ_Actual_Rate",
+      "TZ_Actual_Cost",
+    ],
+    orderBy: "Sup_Unit_name, Sup_Sector_Name, Sup_Zone_Name, Sup_Section_Name, GROSS_DT1, CCS_Slip, DN_Number",
+  },
   "fertilizer-requests": { service: "fertilizer", status: "requests" },
   "fertilizer-pending-agriculture": { service: "fertilizer", status: "pending-agriculture" },
   "fertilizer-pending-finance": { service: "fertilizer", status: "pending-finance" },
@@ -72,10 +112,10 @@ function addFilter(clauses, parameters, column, value, operator = "=") {
   parameters.push(value);
 }
 
-function addIdentifierFilter(clauses, parameters, value) {
+function addIdentifierFilter(clauses, parameters, value, columns = ["ID_Number", "Field_Number"]) {
   const normalized = normalizeIdentifierSearch(value);
   if (!normalized) return;
-  clauses.push("(REPLACE(UPPER(TRIM(CAST(ID_Number AS VARCHAR))), 'FN-', '') = ? OR REPLACE(UPPER(TRIM(CAST(Field_Number AS VARCHAR))), 'FN-', '') = ?)");
+  clauses.push(`(REPLACE(UPPER(TRIM(CAST(${columns[0]} AS VARCHAR))), 'FN-', '') = ? OR REPLACE(UPPER(TRIM(CAST(${columns[1]} AS VARCHAR))), 'FN-', '') = ?)`);
   parameters.push(normalized, normalized);
 }
 
@@ -87,16 +127,30 @@ function nextDateOnly(value) {
 
 function buildFilters(rule, query) {
   const { dateFrom, dateTo } = validateDateRange(query);
-  const clauses = rule.dataset === "qc"
+  const clauses = rule.dataset === "qc" || rule.dataset === "fully-billed"
     ? []
     : [rule.service === "fertilizer" ? FERTILIZER_FILTER : SEEDCANE_FILTER];
-  const parameters = [rule.dataset === "qc" ? "__QC_PARQUET_PATH__" : "__PARQUET_PATH__"];
+  const parameters = [
+    rule.dataset === "qc"
+      ? "__QC_PARQUET_PATH__"
+      : rule.dataset === "fully-billed"
+      ? "__FULLY_BILLED_PARQUET_PATH__"
+      : "__PARQUET_PATH__",
+  ];
 
-  addFilter(clauses, parameters, "Unit_name", query.unit);
-  addFilter(clauses, parameters, "Sector_Name", query.sector);
-  addFilter(clauses, parameters, "Zone_Name", query.zone);
-  addFilter(clauses, parameters, "Section_Name", query.section);
-  addIdentifierFilter(clauses, parameters, query.identifierSearch);
+  const locationColumns = rule.dataset === "fully-billed"
+    ? { unit: "Sup_Unit_name", sector: "Sup_Sector_Name", zone: "Sup_Zone_Name", section: "Sup_Section_Name" }
+    : { unit: "Unit_name", sector: "Sector_Name", zone: "Zone_Name", section: "Section_Name" };
+  addFilter(clauses, parameters, locationColumns.unit, query.unit);
+  addFilter(clauses, parameters, locationColumns.sector, query.sector);
+  addFilter(clauses, parameters, locationColumns.zone, query.zone);
+  addFilter(clauses, parameters, locationColumns.section, query.section);
+  addIdentifierFilter(
+    clauses,
+    parameters,
+    query.identifierSearch,
+    rule.dataset === "fully-billed" ? ["Sup_Farmer_Id", "Sup_Field_No"] : undefined,
+  );
 
   const dateColumn = rule.dateColumn || "Max_Created_On";
   addFilter(clauses, parameters, dateColumn, `${dateFrom}T00:00:00`, ">=");
@@ -210,6 +264,32 @@ function detailedQuery(filters, rule) {
     ORDER BY ${rule.orderBy || ORDER_BY}`;
 }
 
+function fullyBilledSummaryQuery(filters, group) {
+  const groupColumns = {
+    unit: ["Sup_Unit_name"],
+    sector: ["Sup_Unit_name", "Sup_Sector_Name"],
+    zone: ["Sup_Unit_name", "Sup_Sector_Name", "Sup_Zone_Name"],
+    section: ["Sup_Unit_name", "Sup_Sector_Name", "Sup_Zone_Name", "Sup_Section_Name"],
+  }[group];
+  if (!groupColumns) throw httpError(`Unsupported summary group: ${group}.`, 400);
+  const groupSql = groupColumns.map((column) => `"${column}"`).join(", ");
+  return `
+    SELECT ${groupSql},
+      SUM(TRY_CAST(Delivered_Qty AS DOUBLE)) AS "Total Billed (Tonnes)",
+      COUNT(DISTINCT CCS_Slip) AS "Total CCS Slips"
+    FROM (
+      SELECT ${ruleColumns("billing-fully-billed")}
+      FROM read_parquet(?)
+      ${filters.clauses.length ? `WHERE ${filters.clauses.join(" AND ")}` : ""}
+    ) AS fully_billed
+    GROUP BY ${groupSql}
+    ORDER BY ${groupSql}`;
+}
+
+function ruleColumns(reportId) {
+  return REPORT_RULES[reportId].columns.map((column) => `"${column}"`).join(", ");
+}
+
 function summaryQuery(filters, rule, group) {
   const groupColumns = GROUP_COLUMNS[group];
   if (!groupColumns) throw httpError(`Unsupported summary group: ${group}.`, 400);
@@ -250,6 +330,8 @@ export async function runParquetReport({ reportId, variant, group, query }) {
   const filters = buildFilters(rule, query);
   const sql = variant === "detailed"
     ? detailedQuery(filters, rule)
+    : reportId === "billing-fully-billed"
+    ? fullyBilledSummaryQuery(filters, group)
     : summaryQuery(filters, rule, group);
   const rows = await executeParquetQuery(sql, filters.parameters);
 

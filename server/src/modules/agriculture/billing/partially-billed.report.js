@@ -4,6 +4,7 @@ export default {
   description: "Supply slips that have billing but remain below their weighed quantity.",
   categoryId: "agriculture",
   subcategoryId: "billing",
+  order: 4,
   queryModule: "billing",
   variants: ["detailed", "summary"],
   variantLabels: { detailed: "Detailed Report", summary: "Summary Report" },

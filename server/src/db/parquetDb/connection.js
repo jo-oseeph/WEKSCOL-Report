@@ -8,7 +8,11 @@ let connection;
 // Return the configured Parquet file path and fail clearly when the file is unavailable.
 async function getParquetPath(dataset = "base") {
   const config = loadConfig();
-  const parquetPath = dataset === "qc" ? config.qcParquetPath : config.parquetPath;
+  const parquetPath = dataset === "qc"
+    ? config.qcParquetPath
+    : dataset === "fully-billed"
+    ? config.fullyBilledParquetPath
+    : config.parquetPath;
   try {
     await fs.access(parquetPath);
   } catch {
@@ -34,6 +38,7 @@ export async function executeParquetQuery(query, parameters = []) {
   const paths = new Map();
   if (tokens.has("__PARQUET_PATH__")) paths.set("__PARQUET_PATH__", await getParquetPath("base"));
   if (tokens.has("__QC_PARQUET_PATH__")) paths.set("__QC_PARQUET_PATH__", await getParquetPath("qc"));
+  if (tokens.has("__FULLY_BILLED_PARQUET_PATH__")) paths.set("__FULLY_BILLED_PARQUET_PATH__", await getParquetPath("fully-billed"));
   const values = parameters.map((value) => paths.get(value) || value);
 
   return new Promise((resolve, reject) => {

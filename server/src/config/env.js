@@ -25,6 +25,7 @@ export default function loadConfig() {
     databaseUrlUnpooled: process.env.DATABASE_URL_UNPOOLED || "",
     parquetPath: process.env.PARQUET_REPORT_PATH || path.join(root, "reports", "parquet-etl", "data", "report_base.parquet"),
     qcParquetPath: process.env.PARQUET_QC_REPORT_PATH || path.join(root, "reports", "parquet-etl", "data", "fertilizer_issuance_validation.parquet"),
+    fullyBilledParquetPath: process.env.PARQUET_FULLY_BILLED_PATH || path.join(root, "reports", "parquet-etl", "data", "fully_billed.parquet"),
     clientUrls,
     clientUrl: clientUrls.find((url) => !url.includes("localhost")) || clientUrls[0],
     warehouse: {
