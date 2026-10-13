@@ -4,7 +4,7 @@ import "../styles/LocationFilter.css";
 
 
 function LocationFilter({ selection, onChange, locations = [], labels = LOCATION_LEVELS, fields }) {
-  const filterFields = fields || ["plant", "region", "zone", "section"];
+  const filterFields = fields || ["unit", "sector", "zone", "section"];
   const optionsFor = (levelIndex, parentId) => {
     if (levelIndex === 0) return [...new Set(locations.map((item) => item[filterFields[0]]))].filter(Boolean).map((name) => ({ id: name, name }));
     const parentField = filterFields[levelIndex - 1];

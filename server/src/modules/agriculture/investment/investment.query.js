@@ -12,6 +12,8 @@ const GROUP_COLUMNS = {
 };
 const SECTOR = `CASE WHEN B.Region_Name = 'KABRAS CENTRAL' THEN CASE WHEN B.Zone_Name IN ('CENTRAL ZONE-B','EASTERN ZONE') THEN 'KABRAS B' ELSE 'KABRAS A' END WHEN B.Region_Name IN ('MISIKHU','NAITIRI','KITALE','BUSIA','NZOIA','MAGUT','BUTERE') THEN B.Region_Name WHEN B.Region_Name IN ('MOI UNIVERSITY','TURBO') THEN 'SELIA' WHEN B.Region_Name IN ('DOROFU','DOROFU KHALABA') THEN 'KHALABA' WHEN B.Region_Name IN ('KABRAS WEST','KABRAS NORTH') THEN 'KABRAS A' WHEN B.Region_Name IN ('KAKAMEGA','BUKURA','KABRAS SOUTH','KAIMOSI','KABRAS') THEN 'KABRAS B' WHEN B.Region_Name = 'SIAYA' THEN 'LAKE AGRO' WHEN B.Region_Name IN ('MIWANI','KERICHO','CHEMELIL') THEN 'NYANDO' WHEN B.Region_Name IN ('Eastern','Northern','Southern','Western') THEN B.Region_Name WHEN B.Region_Name = 'Central' THEN 'Nzoia Nucleus' ELSE 'NOT MAPPED' END`;
 
+const FILTER_SECTOR = SECTOR.replaceAll("B.", "vw.");
+
 function investmentRowsSql() {
   // Cell 44 used Vendor/Amount/Clearing from a CSV export. The live warehouse
   // stores the same investment ledger in material/service tables instead:
@@ -27,7 +29,7 @@ function investmentRowsSql() {
 }
 
 function detailedSelect() {
-  return `SELECT B.Field_Number,B.OVERLAP,B.ID_Number,B.IPRS,B.First_Name,B.Description,B.Region_Name,${SECTOR} AS Sector_Name,B.Zone_Name,B.Section_Name,B.SubLocation,B.Unit_name AS Unit,B.Village_Name,CASE WHEN B.Qty_Fin > 0 THEN 'Finance Approved' WHEN B.Qty_Agri > 0 AND B.Qty_Fin = 0 THEN 'Pending Finance Approval' WHEN B.Qty_Agri = 0 THEN 'Pending Agriculture Approval' ELSE 'Pending' END AS [Approval Status],B.Measured_Cane_Area,1 AS No_of_SR,B.Qty_Requested,B.Qty_Agri,B.Qty_Fin,P.Qty_Allocated,P.Qty_Delivered,P.NO_OF_PGIs,B.Qty_Requested-ISNULL(P.Qty_Delivered,0) AS Qty_Pending,DATEDIFF(DAY,B.Created_On,GETDATE()) AS Ageing_Days,B.Created_On AS Min_Created_On,B.Created_On AS Max_Created_On,B.Current_Crop_Cycle,B.Planned_Date_Of_PC_Ratoon,B.Actual_Date_Of_Plant_Ratoon,B.Contract_Number,B.Is_Synch,B.Is_Company,COALESCE(I.Total_Investment,0) AS Total_Investment,COALESCE(I.CIR_Pending,0) AS CIR_Pending,COALESCE(I.Overdue_Amount,0) AS Overdue_Amount,COALESCE(I.Investment_Flag,'Not Overdue') AS Investment_Flag,NULL AS Farmer_Name,CASE WHEN COALESCE(I.Investment_Flag,'Not Overdue')='Overdue' AND COALESCE(I.Overdue_Amount,0)>${OVERDUE_AMOUNT_THRESHOLD} THEN 'Don''t Issue' WHEN COALESCE(I.Investment_Flag,'Not Overdue')='Not Overdue' AND COALESCE(I.Overdue_Amount,0)=0 THEN 'Issue' ELSE 'Issue with Precaution' END AS CC_Remarks,CASE WHEN B.Description LIKE '%SEED CANE%' THEN 'Seed Cane' WHEN B.Description LIKE '%MILL CANE%' THEN 'Mill Cane' ELSE 'Other' END AS Cane_Type
+  return `SELECT B.Field_Number,B.OVERLAP,B.ID_Number,B.IPRS,B.First_Name,B.Description,${SECTOR} AS Sector_Name,B.Zone_Name,B.Section_Name,B.SubLocation,B.Unit_name AS Unit,B.Village_Name,CASE WHEN B.Qty_Fin > 0 THEN 'Finance Approved' WHEN B.Qty_Agri > 0 AND B.Qty_Fin = 0 THEN 'Pending Finance Approval' WHEN B.Qty_Agri = 0 THEN 'Pending Agriculture Approval' ELSE 'Pending' END AS [Approval Status],B.Measured_Cane_Area,1 AS No_of_SR,B.Qty_Requested,B.Qty_Agri,B.Qty_Fin,P.Qty_Allocated,P.Qty_Delivered,P.NO_OF_PGIs,B.Qty_Requested-ISNULL(P.Qty_Delivered,0) AS Qty_Pending,DATEDIFF(DAY,B.Created_On,GETDATE()) AS Ageing_Days,B.Created_On AS Min_Created_On,B.Created_On AS Max_Created_On,B.Current_Crop_Cycle,B.Planned_Date_Of_PC_Ratoon,B.Actual_Date_Of_Plant_Ratoon,B.Contract_Number,B.Is_Synch,B.Is_Company,COALESCE(I.Total_Investment,0) AS Total_Investment,COALESCE(I.CIR_Pending,0) AS CIR_Pending,COALESCE(I.Overdue_Amount,0) AS Overdue_Amount,COALESCE(I.Investment_Flag,'Not Overdue') AS Investment_Flag,NULL AS Farmer_Name,CASE WHEN COALESCE(I.Investment_Flag,'Not Overdue')='Overdue' AND COALESCE(I.Overdue_Amount,0)>${OVERDUE_AMOUNT_THRESHOLD} THEN 'Don''t Issue' WHEN COALESCE(I.Investment_Flag,'Not Overdue')='Not Overdue' AND COALESCE(I.Overdue_Amount,0)=0 THEN 'Issue' ELSE 'Issue with Precaution' END AS CC_Remarks,CASE WHEN B.Description LIKE '%SEED CANE%' THEN 'Seed Cane' WHEN B.Description LIKE '%MILL CANE%' THEN 'Mill Cane' ELSE 'Other' END AS Cane_Type
   FROM #BASE B LEFT JOIN #PGI P ON B.Process_Order_Material_ID=P.Process_Order_Material_ID LEFT JOIN #INV I ON LTRIM(RTRIM(B.Field_Number))=LTRIM(RTRIM(I.field_no))`;
 }
 function predicates(clauses, joiner = "WHERE") {
@@ -60,7 +62,7 @@ export async function runInvestmentQuery({
 }) {
   const boundParameters = { dateFrom: null, dateTo: null, ...parameters };
   if (variant === "detailed") {
-    const detailed = `SELECT * FROM (${detailedSelect()}) AS detailed_result ${predicates(clauses)} ORDER BY Region_Name,Sector_Name,Field_Number`;
+    const detailed = `SELECT * FROM (${detailedSelect()}) AS detailed_result ${predicates(clauses)} ORDER BY Sector_Name,Field_Number`;
     return executeWarehouseQuery(batch(detailed), boundParameters);
   }
   const groups = GROUP_COLUMNS[group];
@@ -71,6 +73,6 @@ export async function runInvestmentQuery({
 
 export async function loadInvestmentFilters() {
   return executeWarehouseQuery(
-    "SELECT DISTINCT PlantName2 AS unit, Region_Name AS sector, Zone_Name AS zone, Section_Name AS section FROM vW_Village_Related_Data ORDER BY unit, sector, zone, section",
+    `SELECT DISTINCT PlantName2 AS unit, ${FILTER_SECTOR} AS sector, Zone_Name AS zone, Section_Name AS section FROM vW_Village_Related_Data vw ORDER BY unit, sector, zone, section`,
   );
 }

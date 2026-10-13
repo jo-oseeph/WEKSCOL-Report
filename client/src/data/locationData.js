@@ -1,6 +1,6 @@
 export const LOCATION_LEVELS = [
-  "Plant",
-  "Region",
+  "Unit",
+  "Sector",
   "Zone",
   "Section",
 ];
