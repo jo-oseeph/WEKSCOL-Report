@@ -72,5 +72,9 @@ async function buildCatalog() {
     group.reports.sort((left, right) => (left.order || 0) - (right.order || 0));
   }
 
+  for (const subcategory of subcategories.values()) {
+    subcategory.reports.sort((left, right) => (left.order || 0) - (right.order || 0));
+  }
+
   return { categories: [...categories.values()], reports };
 }

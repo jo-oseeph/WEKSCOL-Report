@@ -4,6 +4,7 @@ export default {
   description: "Supply slips with no billed material quantity.",
   categoryId: "agriculture",
   subcategoryId: "billing",
+  order: 6,
   queryModule: "billing",
   variants: ["detailed", "summary"],
   variantLabels: { detailed: "Detailed Report", summary: "Summary Report" },

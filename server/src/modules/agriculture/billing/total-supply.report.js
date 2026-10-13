@@ -4,6 +4,7 @@ export default {
   description: "All valid seed cane supply slips and their weighed quantities.",
   categoryId: "agriculture",
   subcategoryId: "billing",
+  order: 1,
   queryModule: "billing",
   variants: ["detailed", "summary"],
   variantLabels: { detailed: "Detailed Report", summary: "Summary Report" },

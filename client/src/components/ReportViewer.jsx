@@ -112,7 +112,10 @@ function ReportViewer({ report }) {
 
   async function handleGenerate(event) {
     event.preventDefault();
-    await loadReport("detailed");
+    const initialVariant = report.variants?.includes("detailed")
+      ? "detailed"
+      : report.variants?.[0] || "detailed";
+    await loadReport(initialVariant);
   }
 
   async function handleVariantChange(variant) {

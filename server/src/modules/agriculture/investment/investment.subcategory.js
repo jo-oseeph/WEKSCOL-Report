@@ -1,1 +1,7 @@
-export default { id: "investment", categoryId: "agriculture", name: "Investment", description: "Agriculture investment reports.", order: 2 };
+export default {
+  id: "investment",
+  categoryId: "agriculture",
+  name: "Investment",
+  description: "Agriculture investment reports.",
+  order: 2,
+};

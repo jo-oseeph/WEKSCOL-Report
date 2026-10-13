@@ -1,0 +1,20 @@
+export default {
+  id: "billing-general-summary",
+  name: "General Summary",
+  description: "Summary of total, fully billed, partially billed, over billed, and not billed supply.",
+  categoryId: "agriculture",
+  subcategoryId: "billing",
+  order: 2,
+  queryModule: "billing",
+  variants: ["summary"],
+  variantLabels: { summary: "Summary Report" },
+  summaryGroups: ["unit", "sector", "zone", "section"],
+  params: [
+    { name: "unit", type: "string", sql: "Sup_Unit_name = @unit" },
+    { name: "sector", type: "string", sql: "Sup_Sector_Name = @sector" },
+    { name: "zone", type: "string", sql: "Sup_Zone_Name = @zone" },
+    { name: "section", type: "string", sql: "Sup_Section_Name = @section" },
+    { name: "dateFrom", type: "date", sql: "GROSS_DT1 >= @dateFrom" },
+    { name: "dateTo", type: "date", sql: "GROSS_DT1 < DATEADD(DAY, 1, @dateTo)" },
+  ],
+};

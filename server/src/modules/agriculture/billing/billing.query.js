@@ -9,6 +9,7 @@ const GROUP_COLUMNS = {
 
 const REPORT_RULES = {
   "billing-total-supply": "total",
+  "billing-general-summary": "general-summary",
   "billing-fully-billed": "Fully billed",
   "billing-partially-billed": "Partially billed",
   "billing-overbilled": "Over billed",
@@ -187,6 +188,19 @@ function summary(status, group, clauses) {
     GROUP BY ${groupSql} ORDER BY ${groupSql}`;
 }
 
+function generalSummary(group, clauses) {
+  const columns = GROUP_COLUMNS[group];
+  const groupSql = columns.map((column) => `[${column}]`).join(", ");
+  return `${billingSql()} SELECT ${groupSql},
+    SUM(Net_Weight) AS [Total Supply (Tonnes)],
+    SUM(CASE WHEN Billing_Status = 'Fully billed' THEN Net_Weight ELSE 0 END) AS [Fully Billed (Tonnes)],
+    SUM(CASE WHEN Billing_Status = 'Partially billed' THEN Net_Weight ELSE 0 END) AS [Partially Billed (Tonnes)],
+    SUM(CASE WHEN Billing_Status = 'Over billed' THEN Net_Weight ELSE 0 END) AS [Over Billed (Tonnes)],
+    SUM(CASE WHEN Billing_Status = 'Not billed' THEN Net_Weight ELSE 0 END) AS [Not Billed (Tonnes)]
+    FROM status ${predicates(clauses)}
+    GROUP BY ${groupSql} ORDER BY ${groupSql}`;
+}
+
 export async function runBillingQuery({ reportId, variant, group, clauses, parameters }) {
   const status = REPORT_RULES[reportId];
   const boundParameters = { dateFrom: null, dateTo: null, ...parameters };
@@ -198,8 +212,11 @@ export async function runBillingQuery({ reportId, variant, group, clauses, param
       sql = statusDetailed(status, clauses);
     }
   } else {
+    if (status === "general-summary") sql = generalSummary(group, clauses);
+    else {
     if (status !== "total") boundParameters.billingStatus = status;
     sql = summary(status, group, clauses);
+    }
   }
   return executeWarehouseQuery(sql, boundParameters);
 }

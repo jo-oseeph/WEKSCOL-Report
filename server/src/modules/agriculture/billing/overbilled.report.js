@@ -4,6 +4,7 @@ export default {
   description: "Supply slips billed more than 0.05 tonnes above their weighed quantity.",
   categoryId: "agriculture",
   subcategoryId: "billing",
+  order: 5,
   queryModule: "billing",
   variants: ["detailed", "summary"],
   variantLabels: { detailed: "Detailed Report", summary: "Summary Report" },
