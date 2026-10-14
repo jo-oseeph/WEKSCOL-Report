@@ -25,7 +25,8 @@ function predicates(clauses, joiner = "WHERE") {
 }
 
 function statusPredicate(status) {
-  if (status === "approved") return "B.Qty_Agri IS NOT NULL AND B.Qty_Fin IS NOT NULL AND B.Qty_Agri = B.Qty_Fin AND B.Qty_Agri > 0";
+  if (status === "approved")
+    return "B.Qty_Agri IS NOT NULL AND B.Qty_Fin IS NOT NULL AND B.Qty_Agri = B.Qty_Fin AND B.Qty_Agri > 0";
   if (status === "pending") return "(B.Qty_Agri IS NULL OR B.Qty_Fin IS NULL)";
   return "P.Qty_Delivered > 0";
 }
@@ -50,21 +51,36 @@ function detailedSql(status) {
   return `SELECT B.Field_Number,B.OVERLAP,B.ID_Number,B.IPRS,B.First_Name,B.Description,${SECTOR} AS Sector_Name,B.Zone_Name,B.Section_Name,B.SubLocation,B.Unit_name AS Unit,B.Village_Name,CASE WHEN B.Qty_Fin > 0 AND B.Qty_Agri > 0 AND B.Qty_Fin = B.Qty_Agri THEN 'Finance Approved' WHEN B.Qty_Agri > 0 AND (B.Qty_Fin IS NULL OR B.Qty_Fin = 0) THEN 'Agri Approved' WHEN B.Qty_Agri IS NULL OR B.Qty_Agri = 0 THEN 'Pending Agriculture Approval' ELSE 'Pending' END AS [Approval Status],B.Measured_Cane_Area,1 AS No_of_SR,B.Qty_Requested,B.Qty_Agri,B.Qty_Fin,P.Qty_Allocated,P.Qty_Delivered,P.NO_OF_PGIs,B.Qty_Requested-ISNULL(P.Qty_Delivered,0) AS Qty_Pending,DATEDIFF(DAY,B.Created_On,GETDATE()) AS Ageing_Days,B.Created_On AS Min_Created_On,B.Created_On AS Max_Created_On,B.Current_Crop_Cycle,B.Planned_Date_Of_PC_Ratoon,B.Actual_Date_Of_Plant_Ratoon,B.Contract_Number,B.Is_Synch,B.Is_Company FROM #SR_BASE B LEFT JOIN #SR_PGI P ON B.Process_Order_Material_ID=P.Process_Order_Material_ID ${predicates([statusPredicate(status)])}`;
 }
 
-export async function runServiceRequestQuery({ reportId, variant, group, clauses, parameters }) {
+export async function runServiceRequestQuery({
+  reportId,
+  variant,
+  group,
+  clauses,
+  parameters,
+}) {
   const rule = REPORT_RULES[reportId];
   if (!rule) throw new Error("Unknown service request report.");
   const boundParameters = { dateFrom: null, dateTo: null, ...parameters };
   const detail = detailedSql(rule.status);
   if (variant === "detailed") {
-    return executeWarehouseQuery(baseSql(rule.type, `SELECT * FROM (${detail}) AS service_request_result ${predicates(clauses, "WHERE")} ORDER BY Sector_Name,Field_Number`), boundParameters);
+    return executeWarehouseQuery(
+      baseSql(
+        rule.type,
+        `SELECT * FROM (${detail}) AS service_request_result ${predicates(clauses, "WHERE")} ORDER BY Sector_Name,Field_Number`,
+      ),
+      boundParameters,
+    );
   }
   const groupColumns = GROUP_COLUMNS[group];
   const groupSql = groupColumns.map((name) => `[${name}]`).join(",");
-  const quantityName = rule.type === "FERTILIZER" ? "Quantity_Bags" : "Quantity_Tonnes";
+  const quantityName =
+    rule.type === "FERTILIZER" ? "Quantity_Bags" : "Quantity_Tonnes";
   const summary = `SELECT ${groupSql},COUNT(DISTINCT Field_Number) AS Total_Fields,SUM(Measured_Cane_Area) AS Total_Acreage,SUM(Qty_Requested) AS ${quantityName} FROM (${detail}) AS source ${predicates(clauses, "WHERE")} GROUP BY ${groupSql} ORDER BY ${groupSql}`;
   return executeWarehouseQuery(baseSql(rule.type, summary), boundParameters);
 }
 
 export async function loadServiceRequestFilters() {
-  return executeWarehouseQuery(`SELECT DISTINCT PlantName2 AS unit, ${FILTER_SECTOR} AS sector, Zone_Name AS zone, Section_Name AS section FROM vW_Village_Related_Data vw ORDER BY unit, sector, zone, section`);
+  return executeWarehouseQuery(
+    `SELECT DISTINCT PlantName2 AS unit, ${FILTER_SECTOR} AS sector, Zone_Name AS zone, Section_Name AS section FROM vW_Village_Related_Data vw ORDER BY unit, sector, zone, section`,
+  );
 }
