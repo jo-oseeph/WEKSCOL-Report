@@ -1209,7 +1209,12 @@ def main():
         print("building fertilizer quality-check temp tables...")
 
         cursor = conn.cursor()
-        cursor.execute(BUILD_SQL)
+        cursor.execute("SET NOCOUNT ON;\n" + BUILD_SQL)
+
+        # make sure every statement in the batch has finished (and surfaces any errors)
+        while cursor.nextset():
+            pass
+
         cursor.close()
 
         print("running fertilizer issuance validation...")
