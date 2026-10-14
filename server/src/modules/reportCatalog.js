@@ -19,10 +19,8 @@ export function visibleReportCatalog(catalog, user) {
               reports: group.reports.filter((report) => visibleReportIds.has(report.id)),
             }))
             .filter((group) => group.reports.length > 0),
-        }))
-        .filter((subcategory) => subcategory.reports.length > 0 || subcategory.groups.length > 0),
-    }))
-    .filter((category) => category.subcategories.length > 0);
+        })),
+    }));
 
   return { categories, reports };
 }

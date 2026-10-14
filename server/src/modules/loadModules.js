@@ -2,7 +2,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "agriculture");
+// Scan every category folder under server/src/modules so empty categories can
+// still appear in the navigation before their reports are implemented.
+const root = path.dirname(fileURLToPath(import.meta.url));
 let modulesPromise;
 
 export async function loadModules() {
