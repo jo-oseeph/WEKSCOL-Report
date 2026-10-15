@@ -1,6 +1,8 @@
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import { performance } from "node:perf_hooks";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { loadModules } from "./loadModules.js";
 import { visibleReportCatalog } from "./reportCatalog.js";
 import runReport from "./report-engine/runReport.js";
@@ -23,6 +25,196 @@ function fileName(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+const logoPath = fileURLToPath(
+  new URL("../../../client/public/images/logo1.png", import.meta.url),
+);
+
+function displayValue(value) {
+  return value == null || value === "" ? "" : String(value);
+}
+
+function reportUserName(user) {
+  return [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.email || "Unknown user";
+}
+
+function drawPdfFooter(document, pageNumber) {
+  const { left, right, bottom } = document.page.margins;
+  const width = document.page.width - left - right;
+  document
+    .save()
+    .strokeColor("#000000")
+    .moveTo(left, document.page.height - bottom - 18)
+    .lineTo(document.page.width - right, document.page.height - bottom - 18)
+    .stroke()
+    .fillColor("#000000")
+    .font("Helvetica")
+    .fontSize(8)
+    .text("West Kenya Sugar Company", left, document.page.height - bottom - 12, {
+      width: width / 2,
+      lineBreak: false,
+    })
+    .text(`Page ${pageNumber}`, left + width / 2, document.page.height - bottom - 12, {
+      width: width / 2,
+      align: "right",
+      lineBreak: false,
+    })
+    .restore();
+}
+
+function drawPdfHeading(document, result, user, pageNumber, includeReportDetails = true) {
+  const { left, right, top } = document.page.margins;
+  const width = document.page.width - left - right;
+  const detailsWidth = Math.min(260, width * 0.38);
+  const detailsX = document.page.width - right - detailsWidth;
+  let headingTop = top;
+
+  if (existsSync(logoPath)) {
+    document.image(logoPath, left, headingTop, { fit: [62, 62] });
+  }
+  document
+    .fillColor("#000000")
+    .font("Helvetica-Bold")
+    .fontSize(16)
+    .text("West Kenya Sugar Company", left + 76, headingTop + 8, { width: width - 76 })
+    .fillColor("#000000")
+    .fontSize(13)
+    .text(result.name, left + 76, headingTop + 31, { width: width - 76 });
+
+  if (includeReportDetails) {
+    const dateDownloaded = new Date().toISOString().slice(0, 10);
+    const details = [
+      `Downloaded by: ${reportUserName(user)}`,
+      `Date downloaded: ${dateDownloaded}`,
+      result.dateRange?.dateFrom || result.dateRange?.dateTo
+        ? `Report period: ${result.dateRange.dateFrom || "—"} to ${result.dateRange.dateTo || "—"}`
+        : null,
+    ].filter(Boolean);
+    document
+      .fillColor("#000000")
+      .font("Helvetica")
+      .fontSize(8)
+      .text(details.join("\n"), detailsX, headingTop + 5, {
+        width: detailsWidth,
+        align: "right",
+        lineGap: 3,
+      });
+    headingTop += 91;
+  } else {
+    headingTop += 72;
+  }
+
+  drawPdfFooter(document, pageNumber);
+  return headingTop;
+}
+
+function drawPdfTableHeader(document, columns, widths, y) {
+  const { left } = document.page.margins;
+  const padding = 6;
+  const height = Math.max(
+    25,
+    ...columns.map((column, index) => {
+      document.font("Helvetica-Bold").fontSize(7.5);
+      return document.heightOfString(column, {
+        width: widths[index] - padding * 2,
+        lineGap: 1,
+      }) + padding * 2;
+    }),
+  );
+  let x = left;
+  document
+    .fillColor("#ffffff")
+    .rect(left, y, widths.reduce((sum, width) => sum + width, 0), height)
+    .fill()
+    .strokeColor("#000000")
+    .rect(left, y, widths.reduce((sum, width) => sum + width, 0), height)
+    .stroke();
+  columns.forEach((column, index) => {
+    document
+      .fillColor("#000000")
+      .font("Helvetica-Bold")
+      .fontSize(7.5)
+      .text(column, x + padding, y + padding, {
+        width: widths[index] - padding * 2,
+        lineGap: 1,
+      });
+    document
+      .strokeColor("#000000")
+      .rect(x, y, widths[index], height)
+      .stroke();
+    x += widths[index];
+  });
+  return y + height;
+}
+
+function pdfColumnWidths(document, columns, rows) {
+  const { left, right } = document.page.margins;
+  const available = document.page.width - left - right;
+  const natural = columns.map((column) => {
+    const longest = Math.max(
+      column.length,
+      ...rows.slice(0, 100).map((row) => displayValue(row[column]).length),
+    );
+    return Math.min(180, Math.max(58, longest * 4.25 + 14));
+  });
+  const total = natural.reduce((sum, width) => sum + width, 0);
+  if (total <= available) return natural;
+  const scale = available / total;
+  return natural.map((width) => Math.max(48, width * scale));
+}
+
+function writePdf(document, result, user) {
+  const isWide = result.columns.length > 8;
+  const pageSize = isWide ? "A3" : "A4";
+  const pageMargins = { top: 30, bottom: 32, left: 32, right: 32 };
+  const options = { autoFirstPage: true, margin: 30, size: pageSize, layout: "landscape" };
+  document.info.Title = result.name;
+  document.info.Author = "West Kenya Sugar Company";
+  document.info.Subject = "Report export";
+
+  const widths = pdfColumnWidths(document, result.columns, result.rows);
+  let pageNumber = 1;
+  let headingBottom = drawPdfHeading(document, result, user, pageNumber);
+  let tableY = drawPdfTableHeader(document, result.columns, widths, headingBottom);
+  const bottomLimit = () => document.page.height - document.page.margins.bottom - 30;
+
+  result.rows.forEach((row, rowIndex) => {
+    const cells = result.columns.map((column) => displayValue(row[column]));
+    const rowHeight = Math.max(
+      22,
+      ...cells.map((cell, index) => document.heightOfString(cell, {
+        width: widths[index] - 10,
+        font: "Helvetica",
+        fontSize: 7.5,
+        lineGap: 1,
+      }) + 10),
+    );
+    if (tableY + rowHeight > bottomLimit()) {
+      drawPdfFooter(document, pageNumber);
+      document.addPage({ ...options, margins: pageMargins });
+      pageNumber += 1;
+      headingBottom = drawPdfHeading(document, result, user, pageNumber, false);
+      tableY = drawPdfTableHeader(document, result.columns, widths, headingBottom);
+    }
+    const { left } = document.page.margins;
+    let x = left;
+    document
+      .fillColor("#ffffff")
+      .rect(left, tableY, widths.reduce((sum, width) => sum + width, 0), rowHeight)
+      .fill();
+    cells.forEach((cell, index) => {
+      document
+        .fillColor("#000000")
+        .font("Helvetica")
+        .fontSize(7.5)
+        .text(cell, x + 5, tableY + 5, { width: widths[index] - 10, height: rowHeight - 8, lineGap: 1 });
+      document.strokeColor("#000000").rect(x, tableY, widths[index], rowHeight).stroke();
+      x += widths[index];
+    });
+    tableY += rowHeight;
+  });
+  drawPdfFooter(document, pageNumber);
 }
 
 function reportQuery(request) {
@@ -117,20 +309,20 @@ export default function createReportsController() {
         await workbook.commit();
       } else {
         response.type("application/pdf").attachment(`${safeName}.pdf`);
-        const document = new PDFDocument({
-          autoFirstPage: true,
-          margin: 30,
-          size: "A4",
-          layout: "landscape",
-        });
+        const pageSize = result.columns.length > 8 ? "A3" : "A4";
+        const document = new PDFDocument({ autoFirstPage: true, margin: 30, size: pageSize, layout: "landscape" });
+        const handlePdfError = (error) => {
+          logExport(request, format, {
+            failed: true,
+            totalMs: Math.round(performance.now() - startedAt),
+            message: error.message,
+          });
+          if (!response.destroyed) response.destroy(error);
+        };
+        document.once("error", handlePdfError);
+        response.once("error", handlePdfError);
         document.pipe(response);
-        document.fontSize(14).text(result.name).moveDown();
-        document.fontSize(7).text(result.columns.join(" | "));
-        for (const row of result.rows) {
-          document.text(
-            result.columns.map((column) => row[column] ?? "").join(" | "),
-          );
-        }
+        writePdf(document, result, request.user);
         document.end();
       }
 
