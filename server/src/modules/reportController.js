@@ -44,11 +44,11 @@ function drawPdfFooter(document, pageNumber) {
   const width = document.page.width - left - right;
   document
     .save()
-    .strokeColor("#d7e2dc")
+    .strokeColor("#000000")
     .moveTo(left, document.page.height - bottom - 18)
     .lineTo(document.page.width - right, document.page.height - bottom - 18)
     .stroke()
-    .fillColor("#63736a")
+    .fillColor("#000000")
     .font("Helvetica")
     .fontSize(8)
     .text("West Kenya Sugar Company", left, document.page.height - bottom - 12, {
@@ -66,17 +66,19 @@ function drawPdfFooter(document, pageNumber) {
 function drawPdfHeading(document, result, user, pageNumber, includeReportDetails = true) {
   const { left, right, top } = document.page.margins;
   const width = document.page.width - left - right;
+  const detailsWidth = Math.min(260, width * 0.38);
+  const detailsX = document.page.width - right - detailsWidth;
   let headingTop = top;
 
   if (existsSync(logoPath)) {
     document.image(logoPath, left, headingTop, { fit: [62, 62] });
   }
   document
-    .fillColor("#146b3a")
+    .fillColor("#000000")
     .font("Helvetica-Bold")
     .fontSize(16)
     .text("West Kenya Sugar Company", left + 76, headingTop + 8, { width: width - 76 })
-    .fillColor("#1f2d27")
+    .fillColor("#000000")
     .fontSize(13)
     .text(result.name, left + 76, headingTop + 31, { width: width - 76 });
 
@@ -88,12 +90,16 @@ function drawPdfHeading(document, result, user, pageNumber, includeReportDetails
       result.dateRange?.dateFrom || result.dateRange?.dateTo
         ? `Report period: ${result.dateRange.dateFrom || "—"} to ${result.dateRange.dateTo || "—"}`
         : null,
-    ].filter(Boolean).join("   •   ");
+    ].filter(Boolean);
     document
-      .fillColor("#63736a")
+      .fillColor("#000000")
       .font("Helvetica")
       .fontSize(8)
-      .text(details, left, headingTop + 70, { width });
+      .text(details.join("\n"), detailsX, headingTop + 5, {
+        width: detailsWidth,
+        align: "right",
+        lineGap: 3,
+      });
     headingTop += 91;
   } else {
     headingTop += 72;
@@ -105,15 +111,38 @@ function drawPdfHeading(document, result, user, pageNumber, includeReportDetails
 
 function drawPdfTableHeader(document, columns, widths, y) {
   const { left } = document.page.margins;
-  const height = 25;
+  const padding = 6;
+  const height = Math.max(
+    25,
+    ...columns.map((column, index) => {
+      document.font("Helvetica-Bold").fontSize(7.5);
+      return document.heightOfString(column, {
+        width: widths[index] - padding * 2,
+        lineGap: 1,
+      }) + padding * 2;
+    }),
+  );
   let x = left;
-  document.fillColor("#146b3a").rect(left, y, widths.reduce((sum, width) => sum + width, 0), height).fill();
+  document
+    .fillColor("#ffffff")
+    .rect(left, y, widths.reduce((sum, width) => sum + width, 0), height)
+    .fill()
+    .strokeColor("#000000")
+    .rect(left, y, widths.reduce((sum, width) => sum + width, 0), height)
+    .stroke();
   columns.forEach((column, index) => {
     document
-      .fillColor("#ffffff")
+      .fillColor("#000000")
       .font("Helvetica-Bold")
       .fontSize(7.5)
-      .text(column, x + 5, y + 7, { width: widths[index] - 10, height: height - 8, lineBreak: false, ellipsis: true });
+      .text(column, x + padding, y + padding, {
+        width: widths[index] - padding * 2,
+        lineGap: 1,
+      });
+    document
+      .strokeColor("#000000")
+      .rect(x, y, widths[index], height)
+      .stroke();
     x += widths[index];
   });
   return y + height;
@@ -170,14 +199,17 @@ function writePdf(document, result, user) {
     }
     const { left } = document.page.margins;
     let x = left;
-    document.fillColor(rowIndex % 2 === 0 ? "#f4f8f5" : "#ffffff").rect(left, tableY, widths.reduce((sum, width) => sum + width, 0), rowHeight).fill();
+    document
+      .fillColor("#ffffff")
+      .rect(left, tableY, widths.reduce((sum, width) => sum + width, 0), rowHeight)
+      .fill();
     cells.forEach((cell, index) => {
       document
-        .fillColor("#24352c")
+        .fillColor("#000000")
         .font("Helvetica")
         .fontSize(7.5)
         .text(cell, x + 5, tableY + 5, { width: widths[index] - 10, height: rowHeight - 8, lineGap: 1 });
-      document.strokeColor("#dce7df").rect(x, tableY, widths[index], rowHeight).stroke();
+      document.strokeColor("#000000").rect(x, tableY, widths[index], rowHeight).stroke();
       x += widths[index];
     });
     tableY += rowHeight;
