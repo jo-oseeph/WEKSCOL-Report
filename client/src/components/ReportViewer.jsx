@@ -25,6 +25,7 @@ function ReportViewer({ report }) {
   const [exportingFormat, setExportingFormat] = useState("");
   const [error, setError] = useState("");
   const [caneType, setCaneType] = useState("all");
+  const [cropType, setCropType] = useState("all");
   const isServiceRequest = report.queryModule === "service-request";
   const isBilling = report.queryModule === "billing";
   const isPlantation = report.queryModule === "plantation";
@@ -68,13 +69,14 @@ function ReportViewer({ report }) {
         zone,
         section,
         caneType,
+        cropType: report.id === "daily-weighment" ? cropType : undefined,
         dateFrom,
         dateTo,
         identifierSearch,
       };
     }
     return { unit: first, sector: second, zone, section, dateFrom, dateTo, identifierSearch };
-  }, [locationSelection, caneType, dateFrom, dateTo, identifierSearch, report.id, isServiceRequest, isBilling, isPlantation]);
+  }, [locationSelection, caneType, cropType, dateFrom, dateTo, identifierSearch, report.id, isServiceRequest, isBilling, isPlantation]);
 
   // Strips "all"/empty values so they are not sent to the backend as filters.
   const cleanParams = useMemo(() => {
@@ -207,6 +209,17 @@ function ReportViewer({ report }) {
             <select value={caneType} onChange={(event) => setCaneType(event.target.value)}>
               <option value="all">All Cane Types</option>
               {caneTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+            </select>
+          </div>
+        ) : null}
+
+        {report.id === "daily-weighment" ? (
+          <div className="report-filter-group">
+            <span className="report-filter-group-label">Crop Type</span>
+            <select value={cropType} onChange={(event) => setCropType(event.target.value)}>
+              <option value="all">ALL</option>
+              <option value="MILL CANE">MILL CANE</option>
+              <option value="SEED CANE">SEED CANE</option>
             </select>
           </div>
         ) : null}

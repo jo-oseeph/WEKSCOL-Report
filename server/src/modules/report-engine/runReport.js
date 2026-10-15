@@ -30,7 +30,7 @@ export default async function runReport(reportId, query = {}) {
     result = await runParquetReport({ reportId, variant, group, query });
     filters = { parameters: result.parameters };
   } else {
-    filters = buildFilters(definition, effectiveQuery);
+    filters = buildFilters(definition, effectiveQuery, variant);
   }
   const queryRunners = {
     harvesting: runHarvestingQuery,
