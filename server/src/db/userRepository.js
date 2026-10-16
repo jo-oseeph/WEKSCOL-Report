@@ -42,12 +42,25 @@ const createUserRepository = (db) => {
     },
     async findAllForAdmin() {
       const result = await db.query(
-        `SELECT id, first_name, last_name, email, id_number, avatar_url, role, status
+        `SELECT id, first_name, last_name, email, id_number, avatar_url, role, status, last_active_at
          FROM users
          ORDER BY CASE status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END,
                   first_name, last_name`,
       );
       return result.rows;
+    },
+    async countByStatus() {
+      const result = await db.query(
+        "SELECT status, COUNT(*)::int AS count FROM users GROUP BY status",
+      );
+      return Object.fromEntries(result.rows.map((row) => [row.status, row.count]));
+    },
+    async countAdmins() {
+      const result = await db.query("SELECT COUNT(*)::int AS count FROM users WHERE role = 'admin'");
+      return result.rows[0]?.count || 0;
+    },
+    async updateLastActive(id, timestamp = Date.now()) {
+      await db.query("UPDATE users SET last_active_at = $1 WHERE id = $2", [timestamp, id]);
     },
     async updateProfile({ id, firstName, lastName, email, idNumber, avatarUrl }) {
       const result = await db.query(
@@ -69,7 +82,7 @@ const createUserRepository = (db) => {
     async updateStatus(id, status) {
       const result = await db.query(
         `UPDATE users SET status = $1 WHERE id = $2
-         RETURNING id, first_name, last_name, email, id_number, avatar_url, role, status`,
+         RETURNING id, first_name, last_name, email, id_number, avatar_url, role, status, last_active_at`,
         [status, id],
       );
       return result.rows[0];

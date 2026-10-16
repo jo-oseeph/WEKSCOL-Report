@@ -1,8 +1,9 @@
-export function visibleReportCatalog(catalog, user) {
+export function visibleReportCatalog(catalog, user, allowedReportIds, activeReportIds) {
   const isAdmin = user?.role === "admin";
-  const allowedReportIds = isAdmin ? null : new Set(user?.permissions || []);
+  const allowed = isAdmin ? null : new Set(allowedReportIds || user?.permissions || []);
+  const active = activeReportIds ? new Set(activeReportIds) : null;
   const reports = [...catalog.reports.values()].filter(
-    (report) => isAdmin || allowedReportIds.has(report.id),
+    (report) => (isAdmin || allowed.has(report.id)) && (isAdmin || !active || active.has(report.id)),
   );
   const visibleReportIds = new Set(reports.map((report) => report.id));
 

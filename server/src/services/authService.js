@@ -76,6 +76,8 @@ const createAuthService = ({
   sessionService,
   passwordResetTokenRepository,
   reportPermissionRepository,
+  accessService,
+  activityService,
   emailService,
   clientUrl,
   passwordSecurity = security,
@@ -100,7 +102,8 @@ const createAuthService = ({
           role: "user",
           status: "pending",
         });
-        return toUser(user);
+        activityService?.record({ action: "register", targetUserId: user.id, metadata: { status: user.status } });
+        return toUser({ ...user, permissions: [] });
       } catch (error) {
         if (error?.code === "23505") {
           throw createServiceError("That email or ID number is already registered.", 409);
@@ -123,9 +126,15 @@ const createAuthService = ({
       if (user.status === "rejected") {
         throw createServiceError("Your account was not approved for report access.", 403);
       }
-      const permissions = reportPermissionRepository
-        ? await reportPermissionRepository.findForUser(user.id)
-        : [];
+      if (user.status === "suspended") {
+        throw createServiceError("Your account is suspended. Contact an administrator.", 403);
+      }
+      const permissions = accessService
+        ? await accessService.getEffectiveAccess(user)
+        : reportPermissionRepository
+          ? await reportPermissionRepository.findForUser(user.id)
+          : [];
+      activityService?.record({ action: "sign_in", userId: user.id });
       return {
         user: toUser({ ...user, permissions }),
         token: await sessionService.createSession(user.id),
@@ -141,7 +150,9 @@ const createAuthService = ({
 
       try {
         const user = await userRepository.updateProfile({ ...input, id: userId });
-        const permissions = await reportPermissionRepository.findForUser(user.id);
+        const permissions = accessService
+          ? await accessService.getEffectiveAccess(user)
+          : await reportPermissionRepository.findForUser(user.id);
         return toUser({ ...(await userRepository.findById(user.id)), permissions });
       } catch (error) {
         if (error?.code === "23505") {

@@ -259,7 +259,7 @@ async function writeCsv(response, result) {
   response.end();
 }
 
-export default function createReportsController() {
+export default function createReportsController({ accessService, activityService } = {}) {
   const reportResultCache = createReportResultCache();
 
   async function getReportResult(request) {
@@ -333,6 +333,12 @@ export default function createReportsController() {
         rows: result.rows.length,
         columns: result.columns.length,
       });
+      activityService?.record({
+        action: "export",
+        userId: request.user?.id,
+        reportId: request.params.reportId,
+        metadata: { format, cacheHit, queryMs, rows: result.rows.length, columns: result.columns.length },
+      });
     } catch (error) {
       logExport(request, format, {
         failed: true,
@@ -347,7 +353,11 @@ export default function createReportsController() {
     async catalog(request, response, next) {
       try {
         const catalog = await loadModules();
-        response.json(visibleReportCatalog(catalog, request.user));
+        const allowedReportIds = accessService
+          ? await accessService.getEffectiveAccess(request.user)
+          : request.user?.permissions || [];
+        const activeReportIds = accessService ? await accessService.activeReportIds() : null;
+        response.json(visibleReportCatalog(catalog, request.user, allowedReportIds, activeReportIds));
       } catch (error) {
         next(error);
       }
@@ -392,6 +402,12 @@ export default function createReportsController() {
       try {
         const { value: result, cacheHit, queryMs } = await getReportResult(request);
         response.json(result);
+        activityService?.record({
+          action: "run",
+          userId: request.user?.id,
+          reportId: request.params.reportId,
+          metadata: { cacheHit, queryMs, rows: result.rows.length, columns: result.columns.length },
+        });
         console.info("report_run", {
           reportId: request.params.reportId,
           userId: request.user?.id,

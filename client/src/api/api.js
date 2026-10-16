@@ -111,8 +111,13 @@ export const auth = {
 };
 
 export const admin = {
-  getUsers: () =>
+  getOverview: () =>
+    request("GET", "/admin/overview", { fallbackMessage: "Unable to load the admin overview." }),
+  getLiveActivity: () =>
+    request("GET", "/admin/activity/live", { fallbackMessage: "Unable to load live activity." }),
+  getUsers: (params) =>
     request("GET", "/admin/users", {
+      params,
       fallbackMessage: "Unable to load users.",
     }),
   getReports: () =>
@@ -133,6 +138,19 @@ export const admin = {
       data: { reportIds },
       fallbackMessage: "Unable to save report permissions.",
     }),
+  getUserAccess: (userId) => request("GET", `/admin/users/${userId}/access`, { fallbackMessage: "Unable to load user access." }),
+  updateUserAccess: (userId, access) => request("PUT", `/admin/users/${userId}/access`, { data: access, fallbackMessage: "Unable to save user access." }),
+  approveUser: (userId) => request("PATCH", `/admin/users/${userId}/approve`, { fallbackMessage: "Unable to approve user." }),
+  rejectUser: (userId) => request("PATCH", `/admin/users/${userId}/reject`, { fallbackMessage: "Unable to reject user." }),
+  suspendUser: (userId) => request("PATCH", `/admin/users/${userId}/suspend`, { fallbackMessage: "Unable to suspend user." }),
+  restoreUser: (userId) => request("PATCH", `/admin/users/${userId}/restore`, { fallbackMessage: "Unable to restore user." }),
+  getCatalog: () => request("GET", "/admin/catalog", { fallbackMessage: "Unable to load report catalog." }),
+  setReportActive: (reportId, isActive) => request("PATCH", `/admin/catalog/reports/${reportId}/active`, { data: { isActive }, fallbackMessage: "Unable to update report status." }),
+  getActivity: (params) => request("GET", "/admin/activity", { params, fallbackMessage: "Unable to load activity." }),
+  getPresets: () => request("GET", "/admin/presets", { fallbackMessage: "Unable to load access presets." }),
+  createPreset: (data) => request("POST", "/admin/presets", { data, fallbackMessage: "Unable to create access preset." }),
+  deletePreset: (presetId) => request("DELETE", `/admin/presets/${presetId}`, { fallbackMessage: "Unable to delete access preset." }),
+  downloadActivity: (params) => requestFile("/admin/activity/export.csv", { params, fallbackMessage: "Unable to download activity." }),
 };
 
 // ---------------------------------------------------------------------------
