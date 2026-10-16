@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { FaBars, FaBook, FaChartLine, FaClipboardList, FaTimes, FaUsers, FaUserShield } from "react-icons/fa";
+import { FaBars, FaBook, FaChartLine, FaClipboardList, FaHome, FaTimes, FaUsers, FaUserShield } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { admin as adminApi } from "../../api/api.js";
 import "../../styles/admin/Admin.css";
 import "../../styles/admin/AdminLayout.css";
 
 const links = [
+  { to: "/", label: "Home", icon: FaHome, end: true },
   { to: "/admin", label: "Overview", icon: FaChartLine, end: true },
   { to: "/admin/users", label: "Users", icon: FaUsers },
   { to: "/admin/access", label: "Access control", icon: FaUserShield },
