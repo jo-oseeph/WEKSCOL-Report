@@ -5,7 +5,7 @@ import createAuthRoutes from "./routes/authRoutes.js";
 import createAdminRoutes from "./routes/adminRoutes.js";
 import requireAuth from "./middleware/authMiddleware.js";
 import requireAdmin from "./middleware/adminMiddleware.js";
-import requireReportPermission from "./middleware/reportPermissionMiddleware.js";
+import createReportPermissionMiddleware from "./middleware/reportPermissionMiddleware.js";
 import createReportsRoutes from "./modules/reportRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import notFound from "./middleware/notFound.js";
@@ -42,7 +42,10 @@ export default async function createApp() {
       sessionService: container.sessionService,
       cookieName: container.config.session.cookieName,
     }),
-    createReportsRoutes(container.reportsController, requireReportPermission),
+    createReportsRoutes(
+      container.reportsController,
+      createReportPermissionMiddleware({ accessService: container.accessService }),
+    ),
   );
   app.use(notFound);
   app.use(errorHandler);

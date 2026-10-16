@@ -5,7 +5,7 @@ const { createSessionToken, hashToken } = security;
 const createSessionService = ({
   sessionRepository,
   userRepository,
-  reportPermissionRepository,
+  accessService,
   sessionConfig,
 }) => {
   async function removeExpiredSessions() {
@@ -29,9 +29,10 @@ const createSessionService = ({
       const user = session ? await userRepository.findById(session.user_id) : null;
       if (!user || user.status !== "approved") return null;
 
-      const permissions = reportPermissionRepository
-        ? await reportPermissionRepository.findForUser(user.id)
+      const permissions = accessService
+        ? await accessService.getEffectiveAccess(user)
         : [];
+      await userRepository.updateLastActive?.(user.id);
 
       return {
         id: user.id,
