@@ -4,6 +4,37 @@ import normalizeIdentifierSearch from "./normalizeIdentifierSearch.js";
 import validateDateRange from "./validateDateRange.js";
 
 const REPORT_RULES = {
+  "billing-total-supply": {
+    dataset: "total-supply",
+    dateColumn: "GROSS_DT1",
+    columns: ["CCS_Slip", "GROSS_DT1", "Sup_Field_No", "Sup_Farmer_Name", "Sup_Farmer_Id", "Sup_Field_Area", "Sup_Unit_name", "Sup_Sector_Name", "Sup_Region_Name", "Sup_Zone_Name", "Sup_Section_Name", "Sup_SubLocation", "Sup_Village_Name", "Weighments", "Net_Weight"],
+    orderBy: "Sup_Unit_name, Sup_Sector_Name, Sup_Zone_Name, Sup_Section_Name, GROSS_DT1, CCS_Slip",
+  },
+  "billing-partially-billed": {
+    dataset: "partially-billed",
+    dateColumn: "GROSS_DT1",
+    columns: ["CCS_Slip", "GROSS_DT1", "Billing_Status", "Sup_Field_No", "Sup_Farmer_Name", "Sup_Farmer_Id", "Sup_Field_Area", "Sup_Unit_name", "Sup_Sector_Name", "Sup_Zone_Name", "Sup_Section_Name", "Sup_SubLocation", "Sup_Village_Name", "DN_Number", "DN_Date", "Rec_Field_No", "Rec_Farmer_Name", "Rec_Farmer_Id", "Rec_Field_Area", "Rec_Unit_name", "Rec_Sector_Name", "Rec_Zone_Name", "Rec_Section_Name", "Rec_SubLocation", "Rec_Village_Name", "Net_Weight", "Slip_Billed_Qty", "Delivered_Qty", "Billed_Diff", "SC_Actual_Rate", "SC_Actual_Cost", "TZ_Actual_Rate", "TZ_Actual_Cost"],
+    orderBy: "Sup_Unit_name, Sup_Sector_Name, Sup_Zone_Name, Sup_Section_Name, GROSS_DT1, CCS_Slip, DN_Number",
+  },
+  "billing-overbilled": {
+    dataset: "over-billed",
+    dateColumn: "GROSS_DT1",
+    columns: ["CCS_Slip", "GROSS_DT1", "Billing_Status", "Sup_Field_No", "Sup_Farmer_Name", "Sup_Farmer_Id", "Sup_Field_Area", "Sup_Unit_name", "Sup_Sector_Name", "Sup_Zone_Name", "Sup_Section_Name", "Sup_SubLocation", "Sup_Village_Name", "DN_Number", "DN_Date", "Rec_Field_No", "Rec_Farmer_Name", "Rec_Farmer_Id", "Rec_Field_Area", "Rec_Unit_name", "Rec_Sector_Name", "Rec_Zone_Name", "Rec_Section_Name", "Rec_SubLocation", "Rec_Village_Name", "Net_Weight", "Slip_Billed_Qty", "Delivered_Qty", "Billed_Diff", "SC_Actual_Rate", "SC_Actual_Cost", "TZ_Actual_Rate", "TZ_Actual_Cost"],
+    orderBy: "Sup_Unit_name, Sup_Sector_Name, Sup_Zone_Name, Sup_Section_Name, GROSS_DT1, CCS_Slip, DN_Number",
+  },
+  "billing-not-billed": {
+    dataset: "not-billed",
+    dateColumn: "GROSS_DT1",
+    columns: ["CCS_Slip", "GROSS_DT1", "Billing_Status", "Sup_Field_No", "Sup_Farmer_Name", "Sup_Farmer_Id", "Sup_Field_Area", "Sup_Unit_name", "Sup_Sector_Name", "Sup_Zone_Name", "Sup_Section_Name", "Sup_SubLocation", "Sup_Village_Name", "Net_Weight", "Slip_Billed_Qty", "Billed_Diff", "Age_Days"],
+    orderBy: "Sup_Unit_name, Sup_Sector_Name, Sup_Zone_Name, Sup_Section_Name, GROSS_DT1, CCS_Slip",
+  },
+  "field-wise": {
+    dataset: "field-wise",
+    summaryDataset: "month-wise",
+    dateColumn: "Delivery_Date",
+    columns: ["Rec_Field_No", "Rec_Farmer_Id", "Rec_Farmer_Name", "Unit_name", "Sector_Name", "Region_Name", "Zone_Name", "Section_Name", "SubLocation", "Village_Name", "Contract_Number", "Current_Crop_Cycle", "Cordinates", "Actual_Date_Of_Plant_Ratoon", "Age", "Delivery_Date", "Measured_Cane_Area", "Total_Delivered_Qty"],
+    orderBy: "Delivery_Date, Rec_Field_No",
+  },
   "billing-fully-billed": {
     dataset: "fully-billed",
     dateColumn: "GROSS_DT1",
@@ -127,7 +158,7 @@ function nextDateOnly(value) {
 
 function buildFilters(rule, query) {
   const { dateFrom, dateTo } = validateDateRange(query);
-  const clauses = rule.dataset === "qc" || rule.dataset === "fully-billed"
+  const clauses = rule.dataset === "qc" || rule.dataset === "fully-billed" || rule.dataset === "field-wise" || rule.dataset === "total-supply" || rule.dataset === "partially-billed" || rule.dataset === "over-billed" || rule.dataset === "not-billed"
     ? []
     : [rule.service === "fertilizer" ? FERTILIZER_FILTER : SEEDCANE_FILTER];
   const parameters = [
@@ -135,10 +166,20 @@ function buildFilters(rule, query) {
       ? "__QC_PARQUET_PATH__"
       : rule.dataset === "fully-billed"
       ? "__FULLY_BILLED_PARQUET_PATH__"
+      : rule.dataset === "field-wise"
+      ? "__FIELD_WISE_PARQUET_PATH__"
+      : rule.dataset === "total-supply"
+      ? "__TOTAL_SUPPLY_PARQUET_PATH__"
+      : rule.dataset === "partially-billed"
+      ? "__PARTIALLY_BILLED_PARQUET_PATH__"
+      : rule.dataset === "over-billed"
+      ? "__OVER_BILLED_PARQUET_PATH__"
+      : rule.dataset === "not-billed"
+      ? "__NOT_BILLED_PARQUET_PATH__"
       : "__PARQUET_PATH__",
   ];
 
-  const locationColumns = rule.dataset === "fully-billed"
+  const locationColumns = ["fully-billed", "total-supply", "partially-billed", "over-billed", "not-billed"].includes(rule.dataset)
     ? { unit: "Sup_Unit_name", sector: "Sup_Sector_Name", zone: "Sup_Zone_Name", section: "Sup_Section_Name" }
     : { unit: "Unit_name", sector: "Sector_Name", zone: "Zone_Name", section: "Section_Name" };
   addFilter(clauses, parameters, locationColumns.unit, query.unit);
@@ -149,7 +190,7 @@ function buildFilters(rule, query) {
     clauses,
     parameters,
     query.identifierSearch,
-    rule.dataset === "fully-billed" ? ["Sup_Farmer_Id", "Sup_Field_No"] : undefined,
+    ["fully-billed", "total-supply", "partially-billed", "over-billed", "not-billed"].includes(rule.dataset) ? ["Sup_Farmer_Id", "Sup_Field_No"] : ["Rec_Farmer_Id", "Rec_Field_No"],
   );
 
   const dateColumn = rule.dateColumn || "Max_Created_On";
@@ -323,12 +364,68 @@ function summaryQuery(filters, rule, group) {
     ORDER BY ${groupSql}`;
 }
 
+function billingSummaryQuery(filters, rule, group) {
+  const groupColumns = {
+    unit: ["Sup_Unit_name"],
+    sector: ["Sup_Unit_name", "Sup_Sector_Name"],
+    zone: ["Sup_Unit_name", "Sup_Sector_Name", "Sup_Zone_Name"],
+    section: ["Sup_Unit_name", "Sup_Sector_Name", "Sup_Zone_Name", "Sup_Section_Name"],
+  }[group];
+  if (!groupColumns) throw httpError(`Unsupported summary group: ${group}.`, 400);
+  const groupSql = groupColumns.map((column) => `"${column}"`).join(", ");
+  const quantity = rule.dataset === "total-supply" || rule.dataset === "not-billed"
+    ? "Net_Weight"
+    : "Delivered_Qty";
+  const label = rule.dataset === "total-supply"
+    ? "Total Supplied (Tonnes)"
+    : rule.dataset === "not-billed"
+      ? "Total Not Billed (Tonnes)"
+      : "Total Billed (Tonnes)";
+  return `
+    SELECT ${groupSql},
+      SUM(TRY_CAST(${quantity} AS DOUBLE)) AS "${label}",
+      COUNT(DISTINCT CCS_Slip) AS "Total CCS Slips"
+    FROM read_parquet(?)
+    ${filters.clauses.length ? `WHERE ${filters.clauses.join(" AND ")}` : ""}
+    GROUP BY ${groupSql}
+    ORDER BY ${groupSql}`;
+}
+
+function plantationSummaryQuery(filters, group) {
+  const groupColumns = {
+    unit: ["Unit_name"],
+    sector: ["Unit_name", "Sector_Name"],
+    zone: ["Unit_name", "Sector_Name", "Zone_Name"],
+    section: ["Unit_name", "Sector_Name", "Zone_Name", "Section_Name"],
+  }[group];
+  if (!groupColumns) throw httpError(`Unsupported summary group: ${group}.`, 400);
+  const groupSql = groupColumns.map((column) => `"${column}"`).join(", ");
+  return `
+    WITH by_field_month AS (
+      SELECT Rec_Field_No, DATE_TRUNC('month', Delivery_Date) AS Month_Sort,
+        ${groupSql}, MAX(TRY_CAST(Measured_Cane_Area AS DOUBLE)) AS Measured_Cane_Area
+      FROM read_parquet(?)
+      ${filters.clauses.length ? `WHERE ${filters.clauses.join(" AND ")}` : ""}
+      GROUP BY Rec_Field_No, DATE_TRUNC('month', Delivery_Date), ${groupSql}
+    )
+    SELECT STRFTIME(Month_Sort, '%b %Y') AS Delivery_Month,
+      ${groupSql}, COUNT(DISTINCT Rec_Field_No) AS No_of_Fields,
+      SUM(Measured_Cane_Area) AS Total_Acreage
+    FROM by_field_month
+    GROUP BY Month_Sort, ${groupSql}
+    ORDER BY Month_Sort, ${groupSql}`;
+}
+
 export async function runParquetReport({ reportId, variant, group, query }) {
   const rule = REPORT_RULES[reportId];
   if (!rule) throw httpError("This service request report is not configured for Parquet execution.", 500);
 
   const filters = buildFilters(rule, query);
-  const sql = variant === "detailed"
+  const sql = rule.dataset === "field-wise"
+    ? variant === "detailed" ? detailedQuery(filters, rule) : plantationSummaryQuery(filters, group)
+    : ["total-supply", "partially-billed", "over-billed", "not-billed"].includes(rule.dataset)
+    ? variant === "detailed" ? detailedQuery(filters, rule) : billingSummaryQuery(filters, rule, group)
+    : variant === "detailed"
     ? detailedQuery(filters, rule)
     : reportId === "billing-fully-billed"
     ? fullyBilledSummaryQuery(filters, group)

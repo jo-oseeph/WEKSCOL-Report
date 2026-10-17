@@ -26,6 +26,12 @@ export default function loadConfig() {
     parquetPath: process.env.PARQUET_REPORT_PATH || path.join(root, "reports", "parquet-etl", "data", "report_base.parquet"),
     qcParquetPath: process.env.PARQUET_QC_REPORT_PATH || path.join(root, "reports", "parquet-etl", "data", "fertilizer_issuance_validation.parquet"),
     fullyBilledParquetPath: process.env.PARQUET_FULLY_BILLED_PATH || path.join(root, "reports", "parquet-etl", "data", "fully_billed.parquet"),
+    fieldWiseParquetPath: process.env.PARQUET_FIELD_WISE_PATH || path.join(root, "reports", "parquet-etl", "data", "field_wise.parquet"),
+    monthWiseParquetPath: process.env.PARQUET_MONTH_WISE_PATH || path.join(root, "reports", "parquet-etl", "data", "month_wise.parquet"),
+    totalSupplyParquetPath: process.env.PARQUET_TOTAL_SUPPLY_PATH || path.join(root, "reports", "parquet-etl", "data", "total_supply.parquet"),
+    partiallyBilledParquetPath: process.env.PARQUET_PARTIALLY_BILLED_PATH || path.join(root, "reports", "parquet-etl", "data", "partially_billed.parquet"),
+    overBilledParquetPath: process.env.PARQUET_OVER_BILLED_PATH || path.join(root, "reports", "parquet-etl", "data", "over_billed.parquet"),
+    notBilledParquetPath: process.env.PARQUET_NOT_BILLED_PATH || path.join(root, "reports", "parquet-etl", "data", "not_billed.parquet"),
     clientUrls,
     clientUrl: clientUrls.find((url) => !url.includes("localhost")) || clientUrls[0],
     warehouse: {
