@@ -70,23 +70,6 @@ jobs:
           git pull --rebase -X theirs
           git push
 
-      # TEMPORARY: keeps the public copy fresh until the app reads the private repo.
-      # We remove these two steps in step 6.
-      - name: Copy parquets to the public data folder
-        working-directory: .
-        run: |
-          mkdir -p reports/parquet-etl/data
-          cp data-repo/data/*.parquet reports/parquet-etl/data/
-
-      - name: Commit updated parquet (public, temporary)
-        run: |
-          git config user.name "adrianjuliusaluoch"
-          git config user.email "adrianjuliusaluoch@gmail.com"
-          git add data/field_wise.parquet data/month_wise.parquet
-          git diff --cached --quiet || git commit -m "refresh plantation report (public)"
-          git pull --rebase -X theirs origin master
-          git push
-
       - name: Open issue on failure
         if: ${{ failure() && !cancelled() }}
         working-directory: .
