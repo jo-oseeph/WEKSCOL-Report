@@ -1,2 +1,14 @@
-.admin-access-section:first-of-type{margin-top:10px}
-.admin-preset-pill{display:block;width:100%;margin-top:5px;padding:8px;border:1px solid #d7e5dc;background:#f5faf6;color:#2e6f4c;text-align:left;font-size:11px}
+.admin-access-section:first-of-type {
+  margin-top: 10px;
+}
+.admin-preset-pill {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  padding: 8px;
+  border: 1px solid #d7e5dc;
+  background: #f5faf6;
+  color: #2e6f4c;
+  text-align: left;
+  font-size: 11px;
+}
