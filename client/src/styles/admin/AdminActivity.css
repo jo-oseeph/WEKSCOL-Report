@@ -1,1 +1,5 @@
-.admin-page:has(.admin-action-tag) .admin-table td:last-child{max-width:360px;overflow-wrap:anywhere;white-space:normal}
+.admin-page:has(.admin-action-tag) .admin-table td:last-child {
+  max-width: 360px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
