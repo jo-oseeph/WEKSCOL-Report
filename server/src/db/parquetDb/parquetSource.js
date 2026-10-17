@@ -14,6 +14,18 @@ async function getParquetPath(dataset = "base") {
       ? config.qcParquetPath
       : dataset === "fully-billed"
         ? config.fullyBilledParquetPath
+        : dataset === "field-wise"
+          ? config.fieldWiseParquetPath
+          : dataset === "month-wise"
+            ? config.monthWiseParquetPath
+            : dataset === "total-supply"
+              ? config.totalSupplyParquetPath
+              : dataset === "partially-billed"
+                ? config.partiallyBilledParquetPath
+                : dataset === "over-billed"
+                  ? config.overBilledParquetPath
+                  : dataset === "not-billed"
+                    ? config.notBilledParquetPath
         : config.parquetPath;
   const parquetPath = await resolveParquetFile(configuredPath);
   try {
@@ -55,6 +67,18 @@ export async function executeParquetQuery(query, parameters = []) {
       "__FULLY_BILLED_PARQUET_PATH__",
       await getParquetPath("fully-billed"),
     );
+  if (tokens.has("__FIELD_WISE_PARQUET_PATH__"))
+    paths.set("__FIELD_WISE_PARQUET_PATH__", await getParquetPath("field-wise"));
+  if (tokens.has("__MONTH_WISE_PARQUET_PATH__"))
+    paths.set("__MONTH_WISE_PARQUET_PATH__", await getParquetPath("month-wise"));
+  if (tokens.has("__TOTAL_SUPPLY_PARQUET_PATH__"))
+    paths.set("__TOTAL_SUPPLY_PARQUET_PATH__", await getParquetPath("total-supply"));
+  if (tokens.has("__PARTIALLY_BILLED_PARQUET_PATH__"))
+    paths.set("__PARTIALLY_BILLED_PARQUET_PATH__", await getParquetPath("partially-billed"));
+  if (tokens.has("__OVER_BILLED_PARQUET_PATH__"))
+    paths.set("__OVER_BILLED_PARQUET_PATH__", await getParquetPath("over-billed"));
+  if (tokens.has("__NOT_BILLED_PARQUET_PATH__"))
+    paths.set("__NOT_BILLED_PARQUET_PATH__", await getParquetPath("not-billed"));
   const values = parameters.map((value) => paths.get(value) || value);
 
   return new Promise((resolve, reject) => {

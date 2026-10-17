@@ -6,6 +6,8 @@ export default {
   subcategoryId: "billing",
   order: 1,
   queryModule: "billing",
+  backend: "parquet",
+  backend: "parquet",
   variants: ["detailed", "summary"],
   variantLabels: { detailed: "Detailed Report", summary: "Summary Report" },
   summaryGroups: ["unit", "sector", "zone", "section"],

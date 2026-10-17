@@ -5,6 +5,8 @@ export default {
   categoryId: "agriculture",
   subcategoryId: "plantation",
   queryModule: "plantation",
+  backend: "parquet",
+  backend: "parquet",
   variants: ["detailed", "summary"],
   variantLabels: {
     detailed: "Detailed Report",
