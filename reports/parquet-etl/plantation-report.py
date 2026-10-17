@@ -1,7 +1,6 @@
-
 """
-Extract the fully billed validation quality-check datasets from SQL Server
-and save field-wise and month-wise results as separate Parquet files.
+Extract the field-wise and month-wise datasets from SQL Server
+and save each one as its own Parquet file.
 """
 
 import os
@@ -11,10 +10,7 @@ import pandas as pd
 import pyodbc
 
 
-OUTPUT_DIR = Path(__file__).resolve().parent / "data"
-
-FIELD_WISE_PATH = OUTPUT_DIR / "field_wise.parquet"
-MONTH_WISE_PATH = OUTPUT_DIR / "month_wise.parquet"
+DATA_DIR = Path(__file__).resolve().parent / "data"
 
 
 FIELD_WISE_SQL = r"""
@@ -355,6 +351,13 @@ ORDER BY
 """
 
 
+# parquet file name -> query
+REPORTS = {
+    "field_wise": FIELD_WISE_SQL,
+    "month_wise": MONTH_WISE_SQL,
+}
+
+
 def get_connection():
     server = os.environ.get("SQL_SERVER")
     database = os.environ.get("SQL_DATABASE")
@@ -393,32 +396,20 @@ def get_connection():
 
 
 def main():
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("Connecting to SQL Server...")
+    print("connecting to SQL Server...")
 
     with get_connection() as conn:
-        print("Running field-wise validation query...")
+        for name, sql in REPORTS.items():
+            print(f"running {name} validation...")
 
-        field_df = pd.read_sql(FIELD_WISE_SQL, conn)
-        field_df.to_parquet(FIELD_WISE_PATH, index=False)
+            df = pd.read_sql(sql, conn)
 
-        print(
-            f"Saved {len(field_df):,} rows to "
-            f"{FIELD_WISE_PATH}"
-        )
+            output_path = DATA_DIR / f"{name}.parquet"
+            df.to_parquet(output_path, index=False)
 
-        print("Running month-wise validation query...")
-
-        month_df = pd.read_sql(MONTH_WISE_SQL, conn)
-        month_df.to_parquet(MONTH_WISE_PATH, index=False)
-
-        print(
-            f"Saved {len(month_df):,} rows to "
-            f"{MONTH_WISE_PATH}"
-        )
-
-    print("Both validation datasets have been refreshed.")
+            print(f"wrote {len(df):,} rows to {output_path}")
 
 
 if __name__ == "__main__":
