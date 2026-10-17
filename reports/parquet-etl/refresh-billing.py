@@ -1,7 +1,7 @@
 """
-Extract the billing validation datasets (fully billed, partially billed,
-over billed, not billed) from SQL Server and save each one as its own
-Parquet file.
+Extract the billing validation datasets (total supply, fully billed,
+partially billed, over billed, not billed) from SQL Server and save each
+one as its own Parquet file.
 """
 
 import os
@@ -13,9 +13,9 @@ import pyodbc
 DATA_DIR = Path(__file__).resolve().parent / "data"
 
 # ---------------------------------------------------------------------------
-# Shared blocks. Every report runs the same base / slip / slip_billed logic
-# (and the same status / billed logic for the three billed reports), so the
-# numbers can never drift apart between files.
+# Shared blocks. The four billing reports run the same base / slip /
+# slip_billed logic (and the same status / billed logic for the three billed
+# reports), so the numbers can never drift apart between files.
 # ---------------------------------------------------------------------------
 
 BASE_CTES = r"""
@@ -229,6 +229,89 @@ ORDER BY s.Sup_Unit_name, s.Sup_Sector_Name, s.Sup_Zone_Name, s.Sup_Section_Name
          s.Sup_SubLocation, s.Sup_Village_Name, s.Slip_Date, s.CCS_Slip;
 """
 
+# Total supply: supply side only, one row per CCS slip, nothing billing related.
+# Kept as its own query because it also returns Sup_Region_Name and Weighments.
+TOTAL_SUPPLY_SQL = r"""
+WITH base AS (
+    SELECT DISTINCT
+        DCD.SCSS_SLIP_NO                          AS CCS_Slip,
+        DCD.NUMBER                                AS Weigh_No,
+        TRY_CONVERT(DATE, DCD.GROSS_DT1)          AS GROSS_DT1,
+        DCD.PL_Number                             AS Sup_Field_No,
+        MBP.First_Name                            AS Sup_Farmer_Name,
+        MBP.ID_Number                             AS Sup_Farmer_Id,
+        TRY_CONVERT(DECIMAL(18,4), BPLA.Measured_Cane_Area) AS Sup_Field_Area,
+        vw.PlantName2                             AS Sup_Unit_name,
+        CASE
+            WHEN vw.Region_Name = 'KABRAS CENTRAL' THEN
+                CASE WHEN vw.Zone_Name IN ('CENTRAL ZONE-B','EASTERN ZONE') THEN 'KABRAS B' ELSE 'KABRAS A' END
+            WHEN vw.Region_Name IN ('MISIKHU','NAITIRI','KITALE','BUSIA','NZOIA','MAGUT','BUTERE') THEN vw.Region_Name
+            WHEN vw.Region_Name IN ('MOI UNIVERSITY','TURBO') THEN 'SELIA'
+            WHEN vw.Region_Name IN ('DOROFU','DOROFU KHALABA') THEN 'KHALABA'
+            WHEN vw.Region_Name IN ('KABRAS WEST','KABRAS NORTH') THEN 'KABRAS A'
+            WHEN vw.Region_Name IN ('KAKAMEGA','BUKURA','KABRAS SOUTH','KAIMOSI','KABRAS') THEN 'KABRAS B'
+            WHEN vw.Region_Name = 'SIAYA' THEN 'LAKE AGRO'
+            WHEN vw.Region_Name IN ('MIWANI','KERICHO','CHEMELIL') THEN 'NYANDO'
+            WHEN vw.Region_Name = 'Eastern'  THEN 'Eastern'
+            WHEN vw.Region_Name = 'Northern' THEN 'Northern'
+            WHEN vw.Region_Name = 'Southern' THEN 'Southern'
+            WHEN vw.Region_Name = 'Western'  THEN 'Western'
+            WHEN vw.Region_Name = 'Central'  THEN 'Nzoia Nucleus'
+            ELSE 'NOT MAPPED'
+        END                                       AS Sup_Sector_Name,
+        vw.Region_Name                            AS Sup_Region_Name,
+        vw.Zone_Name                              AS Sup_Zone_Name,
+        vw.Section_Name                           AS Sup_Section_Name,
+        vw.SubLocation                            AS Sup_SubLocation,
+        LTRIM(RTRIM(REPLACE(REPLACE(vw.Village_Name, CHAR(13), ''), CHAR(10), ''))) AS Sup_Village_Name,
+        CAST(ISNULL(TRY_CONVERT(DECIMAL(18,2), DCD.NET_WT), 0) / 1000 AS DECIMAL(18,3)) AS Net_Wt
+    FROM DT_CCSDATA DCD
+    JOIN MD_HARVEST_PERMIT MP
+        ON DCD.DT_Harvest_Permit_ID = MP.MD_Harvest_Permit_ID
+    JOIN DT_BUS_PARTNER_LOCATION_ATTRIBUTES BPLOA
+        ON BPLOA.LeadOpportunity_ID = REPLACE(DCD.PL_Number, 'fn-', '')
+    JOIN DT_BUS_PARTNER_LAND_ATTRIBUTES BPLA
+        ON BPLA.Land_Attributes_Id = BPLOA.Land_Attributes_Id
+    JOIN MD_BUS_PARTNER_MASTER MBP
+        ON MBP.Bus_Partner_ID = BPLA.Bus_Partner_ID
+    JOIN MD_Village_Related_Data vw
+        ON vw.Village_ID = BPLOA.Village_ID
+    JOIN MD_MATERIAL_MASTER MM
+        ON MM.Material_Master_ID = DCD.Material_Master_ID
+    WHERE MM.Description LIKE '%SEED%'
+      AND DCD.ISACTIVE = 1
+      AND MBP.Is_Active = 1
+      AND DCD.NUMBER IS NOT NULL
+      AND DCD.cancel_flag = 0
+      AND DCD.SCSS_SLIP_NO IS NOT NULL
+      AND ISNULL(DCD.IS_CRushed, 0) <> 3
+      AND (TRY_CONVERT(DATETIME, DCD.GROSS_DT1) +
+           ISNULL(TRY_CONVERT(DATETIME, STUFF(RIGHT('0000' + CAST(DCD.GROSS_TM1 AS VARCHAR(4)), 4), 3, 0, ':')), 0))
+          BETWEEN TRY_CONVERT(DATETIME, '2026-01-01 06:00:00')
+              AND TRY_CONVERT(DATETIME, CONVERT(VARCHAR(10), DATEADD(DAY, 1, GETDATE()), 120) + ' 05:59:59')
+),
+slip AS (
+    SELECT x.*
+    FROM (
+        SELECT
+            b.*,
+            SUM(b.Net_Wt)     OVER (PARTITION BY b.CCS_Slip)                     AS Net_Weight,
+            COUNT(*)          OVER (PARTITION BY b.CCS_Slip)                     AS Weighments,
+            MIN(b.GROSS_DT1)  OVER (PARTITION BY b.CCS_Slip)                     AS Slip_Date,
+            ROW_NUMBER()      OVER (PARTITION BY b.CCS_Slip ORDER BY b.Weigh_No) AS pick
+        FROM base b
+    ) x
+    WHERE x.pick = 1
+)
+SELECT
+    CCS_Slip, Slip_Date AS GROSS_DT1, Sup_Field_No, Sup_Farmer_Name, Sup_Farmer_Id, Sup_Field_Area,
+    Sup_Unit_name, Sup_Sector_Name, Sup_Region_Name, Sup_Zone_Name, Sup_Section_Name,
+    Sup_SubLocation, Sup_Village_Name, Weighments, Net_Weight
+FROM slip
+ORDER BY Sup_Unit_name, Sup_Sector_Name, Sup_Zone_Name, Sup_Section_Name,
+         Sup_SubLocation, Sup_Village_Name, Slip_Date, CCS_Slip;
+"""
+
 
 def billed_sql(status):
     return BASE_CTES + STATUS_BILLED_CTES + BILLED_TAIL.replace("__STATUS__", status)
@@ -236,6 +319,7 @@ def billed_sql(status):
 
 # parquet file name -> query
 REPORTS = {
+    "total_supply": TOTAL_SUPPLY_SQL,
     "fully_billed": billed_sql("Fully billed"),
     "partially_billed": billed_sql("Partially billed"),
     "over_billed": billed_sql("Over billed"),
