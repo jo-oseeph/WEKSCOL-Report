@@ -1,4 +1,4 @@
-name: Refresh Fully Billed
+name: Billing Checkout
 
 on:
   workflow_dispatch: {}
@@ -8,7 +8,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: refresh-billing-parquet
+  group: refresh-billing-checkout
   cancel-in-progress: false
 
 jobs:
