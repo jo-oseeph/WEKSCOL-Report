@@ -14,7 +14,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
 
     defaults:
       run:
@@ -47,7 +47,7 @@ jobs:
           SQL_USERNAME: ${{ secrets.SQL_USERNAME }}
           SQL_PASSWORD: ${{ secrets.SQL_PASSWORD }}
         with:
-          timeout_minutes: 20
+          timeout_minutes: 10
           max_attempts: 2
           retry_wait_seconds: 30
           retry_on: error
