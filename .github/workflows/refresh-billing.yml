@@ -14,7 +14,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     defaults:
       run:
@@ -47,17 +47,17 @@ jobs:
           SQL_USERNAME: ${{ secrets.SQL_USERNAME }}
           SQL_PASSWORD: ${{ secrets.SQL_PASSWORD }}
         with:
-          timeout_minutes: 10
+          timeout_minutes: 20
           max_attempts: 2
           retry_wait_seconds: 30
           retry_on: error
-          command: python reports/parquet-etl/fully_billed.py
+          command: python reports/parquet-etl/refresh-billing.py
 
       - name: Commit updated parquet
         run: |
           git config user.name "adrianjuliusaluoch"
           git config user.email "adrianjuliusaluoch@gmail.com"
-          git add data/fully_billed.parquet
+          git add data/total_supply.parquet data/fully_billed.parquet data/partially_billed.parquet data/over_billed.parquet data/not_billed.parquet
           git diff --cached --quiet || git commit -m "refresh fertilizer RQ report"
           git pull --rebase -X ours origin master
           git push
