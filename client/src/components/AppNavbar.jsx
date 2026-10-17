@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { FaBars, FaChartBar, FaHome, FaTimes } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useToast } from "../context/ToastContext.jsx";
 import CategoryTabs from "./CategoryTabs.jsx";
 import UserMenu from "./UserMenu.jsx";
 import "../styles/AppNavbar.css";
@@ -16,6 +17,7 @@ function AppNavbar({
   onSelectReport,
 }) {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -28,6 +30,11 @@ function AppNavbar({
 
   function closeMenu() {
     setIsMenuOpen(false);
+  }
+
+  function handleSignedOutReportsClick() {
+    closeMenu();
+    showToast("Please sign in to access reports.");
   }
 
   return (
@@ -49,7 +56,7 @@ function AppNavbar({
             <FaChartBar aria-hidden="true" /> Reports
           </NavLink>
         ) : (
-          <a className="app-nav-link" href="#auth-panel" onClick={closeMenu}>
+          <a className="app-nav-link" href="#auth-panel" onClick={handleSignedOutReportsClick}>
             <FaChartBar aria-hidden="true" /> Reports
           </a>
         )}

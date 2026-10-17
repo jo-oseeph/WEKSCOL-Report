@@ -111,3 +111,79 @@ a {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+/* Toast */
+.app-toast-region {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 200;
+  display: flex;
+  justify-content: flex-end;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.app-toast {
+  position: relative;
+  overflow: hidden;
+  width: max-content;
+  min-width: 240px;
+  max-width: 100%;
+  padding: 14px 16px 17px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+  color: var(--color-text);
+  pointer-events: auto;
+  animation: app-toast-in 0.2s ease-out;
+}
+
+/* Faint track behind the progress bar */
+.app-toast::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 3px;
+  background: var(--color-primary-light);
+}
+
+.app-toast__message {
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.app-toast__progress {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 3px;
+  background: #e93930;
+  transform-origin: right;
+  animation-name: app-toast-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes app-toast-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@keyframes app-toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .app-toast-region {
+    top: 16px;
+    right: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-toast {
+    animation: none;
+  }
+}
