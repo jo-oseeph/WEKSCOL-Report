@@ -3,5 +3,90 @@ import { admin as adminApi } from "../../api/api.js";
 import { AdminHeader, EmptyState } from "./AdminOverview.jsx";
 import "../../styles/admin/AdminCatalog.css";
 
-function AdminCatalog() { const [reports, setReports] = useState(null); const [error, setError] = useState(""); const [saving, setSaving] = useState(null); useEffect(() => { adminApi.getCatalog().then((result) => setReports(result.reports || [])).catch((requestError) => setError(requestError.message)); }, []); async function toggle(report) { setSaving(report.id); try { const result = await adminApi.setReportActive(report.id, !report.active); setReports((current) => current.map((item) => item.id === report.id ? { ...item, active: result.state.is_active } : item)); } catch (requestError) { setError(requestError.message); } finally { setSaving(null); } } return <section className="admin-page"><AdminHeader title="Report catalog" subtitle="Control which registry reports are available to users." />{error ? <div className="admin-message admin-message-error">{error}</div> : null}<div className="admin-catalog-note">Reports are added in code. This screen controls active availability and usage visibility.</div>{!reports ? <div className="admin-state">Loading catalog…</div> : reports.length === 0 ? <EmptyState text="The report registry is empty." /> : <div className="admin-panel admin-table-wrap"><table className="admin-table"><thead><tr><th>Report</th><th>Category</th><th>Subcategory</th><th>Runs this week</th><th>Status</th></tr></thead><tbody>{reports.map((report) => <tr key={report.id}><td><strong>{report.name}</strong><small>{report.description}</small></td><td>{report.categoryId}</td><td>{report.subcategoryId}</td><td>{report.runsThisWeek}</td><td><button type="button" className={`admin-switch${report.active ? " on" : ""}`} disabled={saving === report.id} onClick={() => toggle(report)} aria-label={`Toggle ${report.name}`}>{report.active ? "Active" : "Inactive"}</button></td></tr>)}</tbody></table></div>}</section>; }
+function AdminCatalog() {
+  const [reports, setReports] = useState(null);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(null);
+  useEffect(() => {
+    adminApi
+      .getCatalog()
+      .then((result) => setReports(result.reports || []))
+      .catch((requestError) => setError(requestError.message));
+  }, []);
+  async function toggle(report) {
+    setSaving(report.id);
+    try {
+      const result = await adminApi.setReportActive(report.id, !report.active);
+      setReports((current) =>
+        current.map((item) =>
+          item.id === report.id
+            ? { ...item, active: result.state.is_active }
+            : item,
+        ),
+      );
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSaving(null);
+    }
+  }
+  return (
+    <section className="admin-page">
+      <AdminHeader
+        title="Report catalog"
+        subtitle="Control which registry reports are available to users."
+      />
+      {error ? (
+        <div className="admin-message admin-message-error">{error}</div>
+      ) : null}
+      <div className="admin-catalog-note">
+        Reports are added in code. This screen controls active availability and
+        usage visibility.
+      </div>
+      {!reports ? (
+        <div className="admin-state">Loading catalog…</div>
+      ) : reports.length === 0 ? (
+        <EmptyState text="The report registry is empty." />
+      ) : (
+        <div className="admin-panel admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Report</th>
+                <th>Category</th>
+                <th>Subcategory</th>
+                <th>Runs this week</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reports.map((report) => (
+                <tr key={report.id}>
+                  <td>
+                    <strong>{report.name}</strong>
+                    <small>{report.description}</small>
+                  </td>
+                  <td>{report.categoryId}</td>
+                  <td>{report.subcategoryId}</td>
+                  <td>{report.runsThisWeek}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className={`admin-switch${report.active ? " on" : ""}`}
+                      disabled={saving === report.id}
+                      onClick={() => toggle(report)}
+                      aria-label={`Toggle ${report.name}`}
+                    >
+                      {report.active ? "Active" : "Inactive"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
 export default AdminCatalog;
