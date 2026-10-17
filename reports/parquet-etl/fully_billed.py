@@ -1,6 +1,7 @@
 """
-Extract the fully billed validation quality-check dataset from SQL Server
-and save the final result as a separate Parquet file.
+Extract the billing validation datasets (fully billed, partially billed,
+over billed, not billed) from SQL Server and save each one as its own
+Parquet file.
 """
 
 import os
@@ -9,13 +10,15 @@ from pathlib import Path
 import pandas as pd
 import pyodbc
 
-OUTPUT_PATH = (
-    Path(__file__).resolve().parent
-    / "data"
-    / "fully_billed.parquet"
-)
+DATA_DIR = Path(__file__).resolve().parent / "data"
 
-BUILD_SQL = r"""
+# ---------------------------------------------------------------------------
+# Shared blocks. Every report runs the same base / slip / slip_billed logic
+# (and the same status / billed logic for the three billed reports), so the
+# numbers can never drift apart between files.
+# ---------------------------------------------------------------------------
+
+BASE_CTES = r"""
 WITH base AS (
     SELECT DISTINCT
         DCD.SCSS_SLIP_NO                          AS CCS_Slip,
@@ -95,9 +98,14 @@ slip_billed AS (
     WHERE dim.CostType = 'MAT'
       AND dim.CCSNo IN (SELECT CCS_Slip FROM slip)
     GROUP BY dim.CCSNo
-),
+)
+"""
+
+STATUS_BILLED_CTES = r"""
+,
 
 status AS (
+    -- Over billed = more than 0.05 t above the weighed weight
     SELECT
         s.*,
         CAST(ROUND(sb.Slip_Billed_Qty_Raw, 2) AS DECIMAL(18,2))                                                  AS Slip_Billed_Qty,
@@ -172,7 +180,12 @@ billed AS (
         ON VW.VILLAGE_ID = BPLOA.VILLAGE_ID
     WHERE dim.CostType = 'MAT'
       AND dim.CCSNo IN (SELECT CCS_Slip FROM slip)
-),
+)
+"""
+
+# fully / partially / over billed: only the status filter differs
+BILLED_TAIL = r"""
+,
 
 checked AS (
     SELECT
@@ -187,7 +200,7 @@ checked AS (
         b.SC_Actual_Rate, b.SC_Actual_Cost, b.TZ_Actual_Rate, b.TZ_Actual_Cost
     FROM status st
     JOIN billed b ON b.CCS_Slip = st.CCS_Slip
-    WHERE st.Billing_Status = 'Fully billed'
+    WHERE st.Billing_Status = '__STATUS__'
 )
 
 SELECT
@@ -196,6 +209,38 @@ FROM checked c
 ORDER BY c.Sup_Unit_name, c.Sup_Sector_Name, c.Sup_Zone_Name, c.Sup_Section_Name,
          c.Sup_SubLocation, c.Sup_Village_Name, c.GROSS_DT1, c.CCS_Slip, c.DN_Number;
 """
+
+NOT_BILLED_TAIL = r"""
+SELECT
+    s.CCS_Slip,
+    s.Slip_Date                                          AS GROSS_DT1,
+    'Not billed'                                         AS Billing_Status,
+    s.Sup_Field_No, s.Sup_Farmer_Name, s.Sup_Farmer_Id, s.Sup_Field_Area,
+    s.Sup_Unit_name, s.Sup_Sector_Name, s.Sup_Zone_Name, s.Sup_Section_Name,
+    s.Sup_SubLocation, s.Sup_Village_Name,
+    s.Net_Weight,
+    CAST(0 AS DECIMAL(18,2))                             AS Slip_Billed_Qty,
+    CAST(ROUND(s.Net_Weight, 2) AS DECIMAL(18,2))        AS Billed_Diff,
+    DATEDIFF(DAY, s.Slip_Date, GETDATE()) AS Age_Days
+FROM slip s
+LEFT JOIN slip_billed sb ON sb.CCS_Slip = s.CCS_Slip
+WHERE ISNULL(ROUND(sb.Slip_Billed_Qty_Raw, 2), 0) <= 0
+ORDER BY s.Sup_Unit_name, s.Sup_Sector_Name, s.Sup_Zone_Name, s.Sup_Section_Name,
+         s.Sup_SubLocation, s.Sup_Village_Name, s.Slip_Date, s.CCS_Slip;
+"""
+
+
+def billed_sql(status):
+    return BASE_CTES + STATUS_BILLED_CTES + BILLED_TAIL.replace("__STATUS__", status)
+
+
+# parquet file name -> query
+REPORTS = {
+    "fully_billed": billed_sql("Fully billed"),
+    "partially_billed": billed_sql("Partially billed"),
+    "over_billed": billed_sql("Over billed"),
+    "not_billed": BASE_CTES + NOT_BILLED_TAIL,
+}
 
 
 def get_connection():
@@ -235,20 +280,20 @@ def get_connection():
 
 
 def main():
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     print("connecting to SQL Server...")
 
     with get_connection() as conn:
-        print("building fully billed quality-check temp tables...")
+        for name, sql in REPORTS.items():
+            print(f"running {name} validation...")
 
-        print("running fully billed validation...")
+            df = pd.read_sql(sql, conn)
 
-        df = pd.read_sql(BUILD_SQL, conn)
+            output_path = DATA_DIR / f"{name}.parquet"
+            df.to_parquet(output_path, index=False)
 
-    df.to_parquet(OUTPUT_PATH, index=False)
-
-    print(f"wrote {len(df):,} rows to {OUTPUT_PATH}")
+            print(f"wrote {len(df):,} rows to {output_path}")
 
 
 if __name__ == "__main__":
