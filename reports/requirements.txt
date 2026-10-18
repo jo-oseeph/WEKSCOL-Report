@@ -1,4 +1,0 @@
-duckdb
-sqlalchemy
-pyodbc
-pandas
