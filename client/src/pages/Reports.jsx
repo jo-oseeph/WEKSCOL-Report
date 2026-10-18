@@ -1,36 +1,21 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ReportViewer from "../components/ReportViewer.jsx";
 import ReportsOverview from "../components/ReportsOverview.jsx";
 import AppNavbar from "../components/AppNavbar.jsx";
-import { reports as reportsApi } from "../api/api.js";
+import { useReportCatalog } from "../context/ReportCatalogContext.jsx";
 import "../styles/Reports.css";
 
 function Reports() {
   const { categoryId, subcategoryId, groupId, reportId } = useParams();
   const navigate = useNavigate();
-  const [reportCategories, setReportCategories] = useState([]);
-  const [catalogError, setCatalogError] = useState("");
+  const {
+    reportCategories,
+    catalogError,
+    isCatalogLoading,
+  } = useReportCatalog();
 
   const querySectionRef = useRef(null);
-  // Loads the report catalog from the backend for the navigation menu.
-  useEffect(() => {
-    let isMounted = true;
-
-    reportsApi
-      .getCatalog()
-      .then((data) => {
-        if (isMounted) setReportCategories(data.categories || []);
-      })
-      .catch((error) => {
-        if (isMounted) setCatalogError(error.message);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   const selectedCategory =
     reportCategories.find((category) => category.id === categoryId) || null;
   const selectedSubcategory =
@@ -68,6 +53,7 @@ function Reports() {
         selectedGroup={selectedGroup}
         selectedReport={selectedReport}
         onSelectReport={handleSelectReport}
+        isCatalogLoading={isCatalogLoading}
       />
 
       <main className="reports-page">

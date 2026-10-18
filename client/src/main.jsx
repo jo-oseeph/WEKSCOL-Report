@@ -5,6 +5,7 @@ import "./styles/index.css";
 import App from "./App.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { ToastProvider } from "./context/ToastContext.jsx";
+import { ReportCatalogProvider } from "./context/ReportCatalogContext.jsx";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
@@ -12,7 +13,9 @@ root.render(
     <BrowserRouter>
       <ToastProvider>
         <AuthProvider>
-          <App />
+          <ReportCatalogProvider>
+            <App />
+          </ReportCatalogProvider>
         </AuthProvider>
       </ToastProvider>
     </BrowserRouter>
