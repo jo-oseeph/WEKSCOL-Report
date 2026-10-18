@@ -87,7 +87,7 @@ export async function resolveParquetFile(configuredPath) {
   const github = {
     token: config.githubDataToken,
     repo: config.githubDataRepo,
-    branch: config.githubDataBranch || "master",
+    branch: config.githubDataBranch || "main",
     folder: config.githubDataFolder ?? "data",
   };
   if (!github.token || !github.repo) return configuredPath;
