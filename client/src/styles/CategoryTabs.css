@@ -204,7 +204,7 @@
   top: 0;
   left: 100%;
   margin-left: 4px;
-  min-width: 290px;
+  min-width: 260px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -230,7 +230,7 @@
   top: 0;
   left: 100%;
   margin-left: 4px;
-  min-width: 220px;
+  min-width: 200px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -307,9 +307,10 @@
   font-weight: 600;
 }
 
-/* Small screens / touch devices: hover cascades are awkward, so stack
-   everything statically and let it scroll instead of floating. */
-@media (max-width: 700px) {
+/* Drawer layout (matches the navbar's 1200px breakpoint): hover cascades are
+   awkward on touch and cramped on narrow screens, so menus stack statically
+   and open on tap or focus. */
+@media (max-width: 1200px) {
   .category-menu-list {
     flex-direction: column;
   }
@@ -324,9 +325,13 @@
     box-shadow: none;
     border: none;
     margin-left: 14px;
+    min-width: 0;
     display: none;
   }
 
+  .subcategory-dropdown.menu-panel-open,
+  .group-flyout.menu-panel-open,
+  .report-flyout.menu-panel-open,
   .category-menu-item:hover > .subcategory-dropdown,
   .category-menu-item:focus-within > .subcategory-dropdown,
   .subcategory-item:focus-within > .group-flyout,
