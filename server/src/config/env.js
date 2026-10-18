@@ -32,6 +32,10 @@ export default function loadConfig() {
     partiallyBilledParquetPath: process.env.PARQUET_PARTIALLY_BILLED_PATH || path.join(root, "reports", "parquet-etl", "data", "partially_billed.parquet"),
     overBilledParquetPath: process.env.PARQUET_OVER_BILLED_PATH || path.join(root, "reports", "parquet-etl", "data", "over_billed.parquet"),
     notBilledParquetPath: process.env.PARQUET_NOT_BILLED_PATH || path.join(root, "reports", "parquet-etl", "data", "not_billed.parquet"),
+    githubDataToken: process.env.GITHUB_DATA_TOKEN || "",
+    githubDataRepo: process.env.GITHUB_DATA_REPO || "",
+    githubDataBranch: process.env.GITHUB_DATA_BRANCH || "main",
+    githubDataFolder: process.env.GITHUB_DATA_FOLDER || "data",
     clientUrls,
     clientUrl: clientUrls.find((url) => !url.includes("localhost")) || clientUrls[0],
     warehouse: {
