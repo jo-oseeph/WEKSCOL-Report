@@ -1,7 +1,7 @@
 /* ==========================================================================
    Navbar layout (desktop, above 1200px):
    Most pages:    [brand] ............ [Home] [Reports] [user]
-   Reports page:  [brand] ............ [Home] | [category tabs] [user]
+   Reports page:  [brand] ............ [Home] [category tabs] [user]
    Home is always the first link. On the reports page the category tabs
    replace the Reports link. At 1200px and below everything collapses into
    the hamburger drawer, so links can never run into the user menu.
@@ -119,9 +119,6 @@
   display: flex;
   align-self: stretch;
   min-width: 0;
-  margin-left: 8px;
-  padding-left: 12px;
-  border-left: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .app-category-navigation .category-menu {
@@ -515,7 +512,6 @@
     width: 100%;
     margin: 4px 0 0;
     padding: 8px 0 0;
-    border-left: 0;
     border-top: 1px solid rgba(255, 255, 255, 0.14);
   }
 
