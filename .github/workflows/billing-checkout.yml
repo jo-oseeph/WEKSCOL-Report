@@ -16,14 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
 
-    defaults:
-      run:
-        working-directory: reports/parquet-etl
-
     steps:
-      - uses: actions/checkout@v4          # public repo: workflow + requirements.txt
-
-      - uses: actions/checkout@v4          # private repo: scripts and parquets
+      - uses: actions/checkout@v4          # private repo: scripts, requirements, parquets
         with:
           repository: adrianjuliusaluoch/wekscol-reports
           token: ${{ secrets.DATA_REPO_PAT }}
@@ -33,7 +27,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
-          cache-dependency-path: reports/parquet-etl/requirements.txt
+          cache-dependency-path: data-repo/requirements.txt
 
       - name: Install SQL Server ODBC driver
         timeout-minutes: 5
@@ -44,7 +38,7 @@ jobs:
           ACCEPT_EULA=Y sudo apt-get install -y msodbcsql18 unixodbc-dev
 
       - name: Install Python deps
-        run: pip install -r requirements.txt
+        run: pip install -r data-repo/requirements.txt
 
       - name: Run extraction
         uses: nick-fields/retry@v3
@@ -84,11 +78,11 @@ jobs:
 
       - name: Open issue on failure
         if: ${{ failure() && !cancelled() }}
-        working-directory: .
         env:
           GH_TOKEN: ${{ secrets.ISSUE_PAT }}
         run: |
           gh issue create \
+            --repo ${{ github.repository }} \
             --title "Report parquet refresh failed - Run #${{ github.run_number }}" \
             --body "## Report parquet refresh failed
 
