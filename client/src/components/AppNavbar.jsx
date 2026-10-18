@@ -15,6 +15,7 @@ function AppNavbar({
   selectedGroup = null,
   selectedReport = null,
   onSelectReport,
+  isCatalogLoading = false,
 }) {
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -68,7 +69,12 @@ function AppNavbar({
             </a>
           )
         ) : null}
-        {hasReportTabs ? (
+        {isReportsPage && isCatalogLoading ? (
+          <div className="app-category-loading" role="status" aria-live="polite">
+            <span className="app-category-spinner" aria-hidden="true" />
+            <span>Loading reports...</span>
+          </div>
+        ) : hasReportTabs ? (
           <div className="app-category-navigation">
             <CategoryTabs
               categories={reportCategories}
