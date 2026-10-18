@@ -1,112 +1,166 @@
+/* ==========================================================================
+   Navbar layout (desktop, above 1200px):
+   Most pages:    [brand] ............ [Home] [Reports] [user]
+   Reports page:  [brand] ............ [Home] [category tabs] [user]
+   Home is always the first link. On the reports page the category tabs
+   replace the Reports link. At 1200px and below everything collapses into
+   the hamburger drawer, so links can never run into the user menu.
+   ========================================================================== */
 .app-navbar {
   position: sticky;
   top: 0;
   z-index: 80;
-  min-height: 72px;
-  padding: 0 clamp(16px, 4vw, 64px);
+  width: 100%;
+  min-height: 72px; /* the auth hero uses calc(100vh - 72px), keep these in sync */
+  padding: 0 clamp(16px, 3vw, 48px);
   display: flex;
   align-items: center;
-  gap: 28px;
-  background: linear-gradient(120deg, #102a20 0%, #14532d 58%, #1d6b3b 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.14);
+  gap: 20px;
+  background: var(--color-primary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+  /* Menus that open past the screen edge are clipped instead of making the
+     page scroll sideways. Vertical dropdowns still show. */
+  overflow-x: clip;
 }
 
+/* ---------- Brand ---------- */
 .app-brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-width: max-content;
+  gap: 12px;
+  flex: none;
+  margin-right: 8px;
   color: #fff;
 }
 
 .app-brand-logo {
-  width: 66px;
-  height: 66px;
+  width: 52px;
+  height: 52px;
   flex: none;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .app-brand-copy {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  line-height: 1.2;
+  gap: 3px;
+  line-height: 1.15;
 }
 
 .app-brand-copy strong {
   color: #fff;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 .app-brand-copy small {
   color: #b9d4c0;
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
+/* ---------- Links and category tabs ---------- */
 .app-nav-links {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  align-self: stretch;
   gap: 4px;
   flex: 1;
-}
-
-.app-category-navigation {
   min-width: 0;
-  max-width: 100%;
-}
-
-.app-category-navigation .category-menu {
-  padding: 0;
-}
-
-.app-category-navigation .category-menu-list {
-  flex-wrap: nowrap;
 }
 
 .app-nav-link {
-  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 14px 16px;
-  color: #d9eee0;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.2;
+  padding: 9px 12px;
   border-radius: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
   transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 .app-nav-link svg {
   width: 14px;
   height: 14px;
+  flex: none;
 }
 
-.app-nav-link:hover,
+.app-nav-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .app-nav-link:focus-visible {
   color: #fff;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
 }
 
 .app-nav-link.active {
   color: #fff;
+  background: rgba(255, 255, 255, 0.16);
 }
 
-.app-nav-link.active::after {
-  content: "";
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 5px;
-  height: 2px;
-  border-radius: 999px;
-  background: #fff;
+/* The tab area is as tall as the bar, so dropdowns open flush under it and
+   the pointer never crosses a dead gap while moving into a menu. */
+.app-category-navigation {
+  display: flex;
+  align-self: stretch;
+  min-width: 0;
 }
 
+.app-category-navigation .category-menu {
+  display: flex;
+  flex: none;
+  padding: 0;
+}
+
+.app-category-navigation .category-menu-list {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2px;
+}
+
+.app-category-navigation .category-menu-item {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.app-category-navigation .category-menu-trigger {
+  gap: 7px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.app-category-navigation .category-menu-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.app-category-navigation .menu-chevron {
+  width: 9px;
+  height: 9px;
+}
+
+/* ---------- User menu (name only) ---------- */
 .app-desktop-user {
   flex: none;
 }
@@ -122,14 +176,24 @@
 .app-user-trigger {
   display: flex;
   align-items: center;
-  gap: 9px;
-  min-height: 38px;
-  padding: 4px 0 4px 16px;
-  border: 0;
-  border-left: 1px solid rgba(255, 255, 255, 0.22);
-  background: transparent;
+  gap: 10px;
+  min-height: 40px;
+  padding: 4px 12px 4px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
   text-align: left;
+  transition: background-color 0.2s ease;
+}
+
+.app-user-trigger:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.app-user-trigger:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
 }
 
 .app-user-avatar,
@@ -139,15 +203,22 @@
   flex: none;
   overflow: hidden;
   border-radius: 50%;
-  background: #14532d;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .app-user-avatar {
   width: 32px;
   height: 32px;
+  background: #e7f1ea;
+  color: var(--color-primary-dark);
+}
+
+.app-profile-avatar {
+  width: 40px;
+  height: 40px;
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .app-user-avatar img,
@@ -161,37 +232,34 @@
 .app-user-copy {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  max-width: 170px;
+  max-width: 130px;
   line-height: 1.2;
 }
 
 .app-user-copy strong {
   overflow: hidden;
   color: #fff;
-  font-size: 11.5px;
+  font-size: 13px;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* The trigger shows the name only, the email lives in the profile panel */
 .app-user-copy small {
-  overflow: hidden;
-  color: #b9d4c0;
-  font-size: 9.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: none;
 }
 
 .app-user-chevron {
   color: #b9d4c0;
-  font-size: 10px;
+  font-size: 9px;
 }
 
 .app-user-dropdown,
 .app-profile-panel {
   position: absolute;
   right: 0;
-  top: calc(100% + 8px);
+  top: calc(100% + 14px);
   z-index: 100;
   background: #fff;
   border: 1px solid var(--color-border);
@@ -199,24 +267,24 @@
 }
 
 .app-user-dropdown {
-  min-width: 160px;
+  min-width: 176px;
   padding: 6px;
   display: flex;
   flex-direction: column;
   gap: 3px;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .app-user-dropdown button,
 .app-user-dropdown a {
   width: 100%;
-  padding: 10px;
+  padding: 10px 12px;
   border: 0;
-  border-radius: 5px;
+  border-radius: 6px;
   background: transparent;
   color: var(--color-text);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   text-align: left;
 }
 
@@ -230,23 +298,18 @@
 }
 
 .app-profile-panel {
-  width: min(320px, calc(100vw - 24px));
-  padding: 14px;
-  border-radius: 10px;
+  width: min(340px, calc(100vw - 24px));
+  padding: 16px;
+  border-radius: 12px;
 }
 
 .app-profile-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding-bottom: 10px;
-  margin-bottom: 10px;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
   border-bottom: 1px solid var(--color-border);
-}
-
-.app-profile-avatar {
-  width: 38px;
-  height: 38px;
 }
 
 .app-profile-header strong,
@@ -256,69 +319,69 @@
 
 .app-profile-header strong {
   color: var(--color-primary-dark);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .app-profile-header small {
   color: var(--color-text-muted);
-  font-size: 10px;
+  font-size: 12px;
   overflow-wrap: anywhere;
 }
 
 .app-profile-form {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  margin-top: 8px;
+  gap: 9px;
+  margin-top: 10px;
 }
 
 .app-profile-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
 }
 
 .app-profile-row div,
 .app-profile-form label {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 
 .app-profile-row span,
 .app-profile-form label span {
   color: var(--color-text-muted);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
 }
 
 .app-profile-row strong {
   overflow-wrap: anywhere;
   color: var(--color-text);
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 .app-profile-form input {
   width: 100%;
-  padding: 7px 8px;
+  padding: 9px 10px;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--color-text);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .app-profile-submit,
 .app-profile-close {
   width: 100%;
-  padding: 8px;
+  padding: 10px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--color-primary);
   color: #fff;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .app-profile-close {
@@ -330,10 +393,11 @@
 .app-profile-message {
   margin: 10px 0 0;
   color: var(--color-primary-dark);
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12.5px;
+  font-weight: 600;
 }
 
+/* ---------- Mobile menu toggle ---------- */
 .app-menu-toggle {
   display: none;
   place-items: center;
@@ -342,14 +406,14 @@
   flex: none;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 8px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
 }
 
 .app-menu-icon {
   grid-area: 1 / 1;
-  font-size: 18px;
+  font-size: 17px;
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
@@ -368,10 +432,37 @@
   transform: rotate(0) scale(1);
 }
 
-@media (max-width: 860px) {
+/* ---------- Desktop fine-tuning ---------- */
+/* Menus near the right edge open leftwards so they stay on screen. */
+@media (min-width: 1201px) {
+  .app-category-navigation .category-menu-item:nth-last-child(-n + 2) > .subcategory-dropdown {
+    left: auto;
+    right: 0;
+  }
+
+  .app-category-navigation .category-menu-item:nth-last-child(-n + 3) .group-flyout,
+  .app-category-navigation .category-menu-item:nth-last-child(-n + 3) .report-flyout {
+    left: auto;
+    right: 100%;
+    margin-left: 0;
+    margin-right: 4px;
+  }
+}
+
+/* Just above the drawer breakpoint, drop the tab icons to save space. */
+@media (min-width: 1201px) and (max-width: 1279px) {
+  .app-category-navigation .category-menu-icon {
+    display: none;
+  }
+
+  .app-category-navigation .category-menu-trigger {
+    padding: 9px 10px;
+  }
+}
+
+/* ---------- Drawer (1200px and below) ---------- */
+@media (max-width: 1200px) {
   .app-navbar {
-    min-height: 64px;
-    padding: 0 16px;
     gap: 12px;
   }
 
@@ -379,22 +470,22 @@
     margin-right: auto;
   }
 
-  .app-brand-logo {
-    width: 48px;
-    height: 48px;
-  }
-
   .app-nav-links {
     position: absolute;
     top: 100%;
     left: 0;
     right: 0;
-    display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 5px;
+    justify-content: flex-start;
+    align-self: auto;
+    gap: 4px;
     padding: 12px 16px 16px;
-    background: #14532d;
+    max-height: calc(100vh - 72px);
+    max-height: calc(100dvh - 72px);
+    overflow-y: auto;
+    background: var(--color-primary);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 14px 24px rgba(16, 42, 32, 0.2);
     opacity: 0;
     visibility: hidden;
@@ -412,58 +503,76 @@
 
   .app-nav-link {
     width: 100%;
-    padding: 14px 12px;
-    font-size: 14px;
+    padding: 13px 12px;
+    font-size: 14.5px;
   }
 
   .app-category-navigation {
+    display: block;
     width: 100%;
-    order: 3;
+    margin: 4px 0 0;
+    padding: 8px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
   }
 
   .app-category-navigation .category-menu {
+    display: block;
     width: 100%;
   }
 
   .app-category-navigation .category-menu-list {
     flex-direction: column;
     align-items: stretch;
-    gap: 5px;
+    gap: 2px;
   }
 
-  .app-category-navigation .category-menu-item,
+  .app-category-navigation .category-menu-item {
+    display: block;
+    height: auto;
+  }
+
   .app-category-navigation .category-menu-trigger {
     width: 100%;
-  }
-
-  .app-category-navigation .category-menu-trigger {
     justify-content: flex-start;
-    padding: 14px 12px;
-    font-size: 14px;
+    padding: 13px 12px;
+    font-size: 14.5px;
   }
 
-  .app-nav-link.active::after {
-    left: 12px;
-    right: auto;
-    width: 42px;
-    bottom: 7px;
+  .app-category-navigation .menu-chevron {
+    margin-left: auto;
   }
 
   .app-desktop-user {
     display: none;
   }
 
+  /* The user always comes last in the drawer, under every link, left aligned */
   .app-mobile-user {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    order: 99;
+    margin-top: 6px;
     padding-top: 8px;
-    margin-top: 4px;
-    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+  }
+
+  .app-mobile-user .app-user-menu-wrap {
+    width: 100%;
   }
 
   .app-mobile-user .app-user-trigger {
     width: 100%;
-    padding: 10px 0;
-    border-left: 0;
+    justify-content: flex-start;
+    padding: 8px 4px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    text-align: left;
+  }
+
+  .app-mobile-user .app-user-chevron {
+    margin-left: auto;
   }
 
   .app-mobile-user .app-user-copy {
@@ -484,13 +593,30 @@
   }
 }
 
+@media (max-width: 860px) {
+  .app-navbar {
+    min-height: 64px;
+    padding: 0 16px;
+  }
+
+  .app-brand-logo {
+    width: 44px;
+    height: 44px;
+  }
+
+  .app-nav-links {
+    max-height: calc(100vh - 64px);
+    max-height: calc(100dvh - 64px);
+  }
+}
+
 @media (max-width: 520px) {
   .app-brand-copy small {
     display: none;
   }
 
   .app-brand-copy strong {
-    font-size: 12px;
+    font-size: 14px;
   }
 
   .app-profile-row {

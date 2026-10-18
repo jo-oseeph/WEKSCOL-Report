@@ -5,6 +5,8 @@ import RegisterForm from "./RegisterForm.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/Hero.css";
 
+const SLIDE_MS = 6000;
+
 const heroSlides = [
   {
     url: "/images/auth-slide-1.jpg",
@@ -94,6 +96,12 @@ const heroSlides = [
 
 function Hero() {
   const [activeSlide, setActiveSlide] = useState(0);
+  // Start paused for visitors who ask their device to reduce motion.
+  const [isPaused, setIsPaused] = useState(
+    () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
+  );
+  // Bumped on every manual change so the timer and progress bar restart together.
+  const [cycle, setCycle] = useState(0);
   const [mode, setMode] = useState("login");
   const [registerSuccessMessage, setRegisterSuccessMessage] = useState("");
   const [prefillUsername, setPrefillUsername] = useState("");
@@ -102,11 +110,22 @@ function Hero() {
   const activeSlideContent = heroSlides[activeSlide];
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    if (isPaused) return undefined;
+    const timer = setTimeout(() => {
       setActiveSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, []);
+    }, SLIDE_MS);
+    return () => clearTimeout(timer);
+  }, [activeSlide, isPaused, cycle]);
+
+  function goToSlide(index) {
+    setActiveSlide(index);
+    setCycle((value) => value + 1);
+  }
+
+  function togglePause() {
+    setIsPaused((value) => !value);
+    setCycle((value) => value + 1);
+  }
 
   const switchMode = (next) => {
     if (next === mode) return;
@@ -124,7 +143,7 @@ function Hero() {
   return (
     <main className="auth-page">
       <section className="auth-visual">
-        <div className="auth-slides">
+        <div className="auth-slides" aria-hidden="true">
           {heroSlides.map((slide, index) => (
             <div
               key={slide.url}
@@ -135,11 +154,11 @@ function Hero() {
             />
           ))}
         </div>
-        <div className="auth-visual-overlay" />
+        <div className="auth-visual-overlay" aria-hidden="true" />
 
         <div className="auth-copy" key={activeSlide}>
           <span className="auth-eyebrow">{activeSlideContent.eyebrow}</span>
-          <h1 className="auth-heading">{activeSlideContent.title}</h1>
+          <h2 className="auth-heading">{activeSlideContent.title}</h2>
           <p className="auth-desc">{activeSlideContent.description}</p>
 
           <div className="auth-stats">
@@ -152,15 +171,34 @@ function Hero() {
           </div>
         </div>
 
-        <div className="auth-slide-dots">
-          {heroSlides.map((slide, index) => (
-            <span
-              key={slide.url}
-              className={
-                "auth-dot" + (index === activeSlide ? " auth-dot-active" : "")
-              }
-            />
-          ))}
+        <div
+          className="auth-slide-controls"
+          data-paused={isPaused}
+          style={{ "--slide-ms": `${SLIDE_MS}ms` }}
+        >
+          <div className="auth-dots" role="group" aria-label="Choose slide">
+            {heroSlides.map((slide, index) => (
+              <button
+                type="button"
+                key={slide.url}
+                className={
+                  "auth-dot" + (index === activeSlide ? " auth-dot-active" : "")
+                }
+                onClick={() => goToSlide(index)}
+                aria-label={`Show slide ${index + 1}: ${slide.title}`}
+                aria-current={index === activeSlide}
+              >
+                <span className="auth-dot-bar">
+                  {index === activeSlide ? (
+                    <span className="auth-dot-progress" key={cycle} />
+                  ) : null}
+                </span>
+              </button>
+            ))}
+          </div>
+          <span className="auth-slide-count" aria-hidden="true">
+            {String(activeSlide + 1).padStart(2, "0")} / {String(heroSlides.length).padStart(2, "0")}
+          </span>
         </div>
       </section>
 
@@ -188,6 +226,11 @@ function Hero() {
                 <h1 className="auth-title">
                   {mode === "login" ? "Sign in" : "Create account"}
                 </h1>
+                <p className="auth-subtitle">
+                  {mode === "login"
+                    ? "Sign in to view your reports."
+                    : "Register to request access to the reports portal."}
+                </p>
               </div>
 
               <div key={mode} className="auth-form-wrap" ref={formRef}>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useMatch } from "react-router-dom";
 import { FaBars, FaChartBar, FaHome, FaTimes } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useToast } from "../context/ToastContext.jsx";
@@ -19,6 +19,11 @@ function AppNavbar({
   const { user } = useAuth();
   const { showToast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isReportsPage = Boolean(useMatch("/reports/*"));
+  const hasReportTabs = reportCategories.length > 0;
+  // On the reports page the category tabs are the Reports navigation, so a
+  // separate "Reports" link next to them would only repeat it.
+  const showReportsLink = !isReportsPage && !hasReportTabs;
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -48,19 +53,22 @@ function AppNavbar({
       </NavLink>
 
       <nav className={`app-nav-links${isMenuOpen ? " app-nav-links-open" : ""}`} aria-label="Main navigation">
+        {/* Home is always the first link, before the Reports link or the report tabs. */}
         <NavLink end to="/" onClick={closeMenu} className={({ isActive }) => `app-nav-link${isActive ? " active" : ""}`}>
           <FaHome aria-hidden="true" /> Home
         </NavLink>
-        {user ? (
-          <NavLink to="/reports" onClick={closeMenu} className={({ isActive }) => `app-nav-link${isActive ? " active" : ""}`}>
-            <FaChartBar aria-hidden="true" /> Reports
-          </NavLink>
-        ) : (
-          <a className="app-nav-link" href="#auth-panel" onClick={handleSignedOutReportsClick}>
-            <FaChartBar aria-hidden="true" /> Reports
-          </a>
-        )}
-        {reportCategories.length > 0 ? (
+        {showReportsLink ? (
+          user ? (
+            <NavLink to="/reports" onClick={closeMenu} className={({ isActive }) => `app-nav-link${isActive ? " active" : ""}`}>
+              <FaChartBar aria-hidden="true" /> Reports
+            </NavLink>
+          ) : (
+            <a className="app-nav-link" href="#auth-panel" onClick={handleSignedOutReportsClick}>
+              <FaChartBar aria-hidden="true" /> Reports
+            </a>
+          )
+        ) : null}
+        {hasReportTabs ? (
           <div className="app-category-navigation">
             <CategoryTabs
               categories={reportCategories}
