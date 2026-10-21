@@ -47,19 +47,19 @@ const CRUSH_DATE_SQL = `
     DATEADD(
       HOUR,
       -6,
-      TRY_CONVERT(DATETIME, DCD.GROSS_DT1)
-        + ISNULL(
-          TRY_CONVERT(
-            DATETIME,
-            STUFF(
-              RIGHT('0000' + CAST(DCD.GROSS_TM1 AS VARCHAR(4)), 4),
-              3,
-              0,
-              ':'
-            )
-          ),
-          0
+      TRY_CONVERT(
+        DATETIME,
+        CONCAT(
+          CONVERT(VARCHAR(10), TRY_CONVERT(DATE, DCD.GROSS_DT1), 23),
+          ' ',
+          STUFF(
+            RIGHT('0000' + CAST(DCD.GROSS_TM1 AS VARCHAR(4)), 4),
+            3,
+            0,
+            ':'
+          )
         )
+      )
     ) AS DATE
   )`;
 
