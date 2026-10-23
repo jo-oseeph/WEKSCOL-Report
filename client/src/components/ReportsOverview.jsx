@@ -17,7 +17,7 @@ const overviewStats = [
     label: "Area under cane",
     value: "12,480",
     unit: "acres",
-    detail: "Across all registered fields",
+    detail: "Across all contracted fields",
     tone: "green",
     Icon: FaMapMarkedAlt,
   },
@@ -71,7 +71,7 @@ const overviewStats = [
     Icon: FaCloudRain,
   },
   {
-    label: "Registered farmers",
+    label: "Contracted farmers",
     value: "7,364",
     detail: "Across all zones and regions",
     tone: "rose",
