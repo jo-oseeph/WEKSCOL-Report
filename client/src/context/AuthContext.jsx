@@ -1,8 +1,15 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../api/api.js";
 
 const AuthContext = createContext(null);
+const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000;
 
 export function AuthProvider({ children }) {
   const navigate = useNavigate();
@@ -41,11 +48,47 @@ export function AuthProvider({ children }) {
     return auth.resetPassword(details);
   }
 
-  async function logout() {
-    await auth.logout();
-    setUser(null);
-    navigate("/");
-  }
+  const logout = useCallback(async () => {
+    try {
+      await auth.logout();
+    } finally {
+      setUser(null);
+      navigate("/");
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!user) return undefined;
+
+    let inactivityTimer;
+    const activityEvents = [
+      "pointerdown",
+      "pointermove",
+      "keydown",
+      "touchstart",
+      "wheel",
+      "scroll",
+    ];
+
+    const resetInactivityTimer = () => {
+      window.clearTimeout(inactivityTimer);
+      inactivityTimer = window.setTimeout(() => {
+        void logout();
+      }, INACTIVITY_TIMEOUT_MS);
+    };
+
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, resetInactivityTimer, { passive: true });
+    });
+    resetInactivityTimer();
+
+    return () => {
+      window.clearTimeout(inactivityTimer);
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, resetInactivityTimer);
+      });
+    };
+  }, [logout, user]);
 
   return <AuthContext.Provider value={{ user, isLoading, login, register, updateProfile, changePassword, requestPasswordReset, resetPassword, logout }}>{children}</AuthContext.Provider>;
 }
