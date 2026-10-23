@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AvatarPicker, UserAvatar } from "./UserAvatar.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -25,6 +25,18 @@ function UserMenu() {
   const [profileForm, setProfileForm] = useState(emptyProfile);
   const [passwordForm, setPasswordForm] = useState(emptyPassword);
   const [message, setMessage] = useState("");
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    function handleOutsidePointerDown(event) {
+      if (!menuRef.current?.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handleOutsidePointerDown);
+    return () => document.removeEventListener("pointerdown", handleOutsidePointerDown);
+  }, []);
 
   if (!user) return null;
 
@@ -78,7 +90,7 @@ function UserMenu() {
   }
 
   return (
-    <div className="app-user-menu-wrap">
+    <div className="app-user-menu-wrap" ref={menuRef}>
       <button
         type="button"
         className="app-user-trigger"
