@@ -226,7 +226,7 @@ function ReportViewer({ report }) {
 
         <div className="report-filter-row">
           <div className="report-filter-group">
-            <span className="report-filter-group-label">Date Range</span>
+            <span className="report-filter-group-label"></span>
             <div className="report-date-fields">
               <div className="report-filter-field">
                 <label htmlFor="dateFrom">Date From</label>
@@ -262,7 +262,7 @@ function ReportViewer({ report }) {
           </div>
 
           <div className="report-filter-group report-search-group">
-            <span className="report-filter-group-label">Search</span>
+            <span className="report-filter-group-label"></span>
             <div className="report-query-canvas">
               <label htmlFor="identifierSearch"> Search ID Number/Field Number</label>
               <input
@@ -270,7 +270,7 @@ function ReportViewer({ report }) {
                 type="search"
                 value={identifierSearch}
                 onChange={(event) => setIdentifierSearch(event.target.value)}
-                placeholder="Enter ID_NUMBER or FIELD_NUMBER"
+                placeholder="Enter ID_NUMBER/FIELD_NUMBER"
                 autoComplete="off"
               />
               <p className="report-filter-hint">
